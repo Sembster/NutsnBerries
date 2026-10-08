@@ -8,7 +8,7 @@
     <div class="rounded-2xl bg-white/80 p-6 shadow sm:p-8">
         <header>
             <h1 class="text-3xl font-extrabold tracking-tight text-neutral-900">Privacy Policy</h1>
-            <p class="mt-4 text-sm leading-7 text-neutral-700">BlazorShop respects customer privacy and limits public storefront pages to the information required for catalog discovery and support.</p>
+            <p class="mt-4 text-sm leading-7 text-neutral-700">NutsnBerries respects customer privacy and limits public storefront pages to the information required for catalog discovery and support.</p>
         </header>
 
         <div class="mt-8 space-y-4 text-sm leading-7 text-neutral-700">
@@ -33,11 +33,11 @@
         var metadataTask = SeoComposer.ComposeStaticPageAsync(
             "Privacy Policy",
             StorefrontRoutes.Privacy,
-            "Review how BlazorShop handles customer information, browsing data, and storefront privacy expectations.");
+            "Review how NutsnBerries handles customer information, browsing data, and storefront privacy expectations.");
         var structuredDataTask = StructuredDataComposer.ComposeWebPageAsync(
             "Privacy Policy",
             StorefrontRoutes.Privacy,
-            "Review how BlazorShop handles customer information, browsing data, and storefront privacy expectations.");
+            "Review how NutsnBerries handles customer information, browsing data, and storefront privacy expectations.");
 
         await Task.WhenAll(metadataTask, structuredDataTask);
 

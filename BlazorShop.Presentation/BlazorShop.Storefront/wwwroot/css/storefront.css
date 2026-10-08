@@ -1,13 +1,13 @@
 .bs-storefront-shell {
     --bs-storefront-surface-background:
-        linear-gradient(180deg, #f8fafb 0%, #eef2f4 52%, #f7f9fa 100%);
+        linear-gradient(180deg, #fbf8f1 0%, #eef2e6 52%, #f8f5ec 100%);
     --bs-storefront-page-background: var(--bs-storefront-surface-background);
 
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
-    color: #172033;
+    color: #24332a;
     background: var(--bs-storefront-page-background);
 }
 
@@ -38,7 +38,7 @@
     inset: 0;
     z-index: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(23, 23, 23, 0.98);
+    background: rgba(30, 52, 40, 0.98);
     clip-path: none;
     pointer-events: none;
     box-shadow: none;
@@ -116,7 +116,7 @@
     overflow-y: auto;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 1rem;
-    background: rgba(23, 23, 23, 0.98);
+    background: rgba(30, 52, 40, 0.98);
     padding: 0.75rem;
     box-shadow: 0 24px 52px rgba(0, 0, 0, 0.32);
 }
@@ -177,7 +177,7 @@
 
 .bs-storefront-header__brand-label {
     margin-top: 0.3rem;
-    color: #a3a3a3;
+    color: #b9cdb4;
     font-size: 0.66rem;
     font-weight: 800;
     letter-spacing: 0.16em;
@@ -257,14 +257,14 @@
 }
 
 .bs-storefront-deal-button {
-    border: 1px solid rgba(245, 158, 11, 0.86);
-    background: #f59e0b;
+    border: 1px solid rgba(184, 59, 94, 0.86);
+    background: #b83b5e;
     color: #ffffff;
     box-shadow: none;
 }
 
 .bs-storefront-deal-button:hover {
-    background: #d97706;
+    background: #962f4b;
 }
 
 .bs-storefront-cart-badge {
@@ -277,7 +277,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    background: #f59e0b;
+    background: #b83b5e;
     color: #ffffff;
     font-size: 0.64rem;
     font-weight: 900;
@@ -312,7 +312,7 @@
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 1rem;
-    background: rgba(23, 23, 23, 0.98);
+    background: rgba(30, 52, 40, 0.98);
     color: #ffffff;
     box-shadow: 0 24px 52px rgba(0, 0, 0, 0.32);
 }
@@ -329,7 +329,7 @@
 
 .bs-storefront-account-menu__meta {
     margin-top: 0.35rem;
-    color: #a3a3a3;
+    color: #b9cdb4;
     font-size: 0.78rem;
     line-height: 1.45;
 }
@@ -429,4 +429,40 @@
     .bs-storefront-header__mobile {
         display: none;
     }
+}
+
+/* NutsnBerries theme: forest, sage, cream and berry */
+:root {
+    --nb-forest: #1e3428;
+    --nb-sage: #8aa68a;
+    --nb-cream: #fbf8f1;
+    --nb-berry: #b83b5e;
+    --nb-berry-dark: #962f4b;
+    --nb-bark: #6b4f3a;
+}
+
+.bs-storefront-header__brand-mark {
+    font-family: Georgia, "Times New Roman", serif;
+    letter-spacing: 0.18em;
+}
+
+.bs-storefront-header__shell::before {
+    border-bottom-color: rgba(138, 166, 138, 0.35);
+}
+
+/* Utility classes baked into site.css (Tailwind) are re-themed on the storefront only */
+.bs-storefront-shell .bg-neutral-900 { background-color: var(--nb-forest); }
+.bs-storefront-shell .hover\:bg-neutral-800:hover { background-color: #2c4a39; }
+.bs-storefront-shell .bg-amber-500 { background-color: var(--nb-berry); }
+.bs-storefront-shell .hover\:bg-amber-600:hover { background-color: var(--nb-berry-dark); }
+.bs-storefront-shell .text-neutral-900 { color: var(--nb-forest); }
+.bs-storefront-shell .bg-white\/80,
+.bs-storefront-shell .bg-white\/70 { background-color: rgba(251, 248, 241, 0.8); }
+
+/* Hero: soft botanical gradient instead of the upstream hotlinked stock photo */
+.bs-storefront-shell .hero-bg {
+    background:
+        radial-gradient(circle at 18% 22%, rgba(184, 59, 94, 0.18) 0, transparent 38%),
+        radial-gradient(circle at 82% 70%, rgba(138, 166, 138, 0.42) 0, transparent 45%),
+        linear-gradient(135deg, #eef2e6 0%, #fbf8f1 55%, #f3e6df 100%);
 }

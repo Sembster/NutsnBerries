@@ -9,7 +9,7 @@
     <div class="text-center">
         <p class="text-sm font-semibold uppercase tracking-[0.2em] text-neutral-500">Today's Deals</p>
         <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl">Hot Deals You Can't Miss</h1>
-        <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-neutral-700">Current featured deals and fast-moving picks across the BlazorShop catalog.</p>
+        <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-neutral-700">Current featured deals and fast-moving picks across the NutsnBerries catalog.</p>
 
         <div class="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center sm:justify-center">
             <a href="@StorefrontRoutes.NewReleases" class="inline-flex min-h-11 w-full items-center justify-center rounded bg-neutral-900 px-3 py-2 font-semibold text-white hover:bg-neutral-800 sm:w-auto sm:px-4">See New Releases</a>
@@ -49,11 +49,11 @@
         var metadataTask = SeoComposer.ComposeStaticPageAsync(
             "Today's Deals",
             StorefrontRoutes.TodaysDeals,
-            "Explore published BlazorShop catalog entries curated as current featured deals.");
+            "Explore published NutsnBerries catalog entries curated as current featured deals.");
         var structuredDataTask = StructuredDataComposer.ComposeCollectionPageAsync(
             "Today's Deals",
             StorefrontRoutes.TodaysDeals,
-            "Explore published BlazorShop catalog entries curated as current featured deals.");
+            "Explore published NutsnBerries catalog entries curated as current featured deals.");
         var result = await ApiClient.GetPublishedCatalogPageAsync(new ProductCatalogQuery
         {
             PageNumber = 1,

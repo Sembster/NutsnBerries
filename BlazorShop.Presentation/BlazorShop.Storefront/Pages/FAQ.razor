@@ -8,7 +8,7 @@
     <div class="rounded-2xl bg-white/80 p-6 shadow sm:p-8">
         <header class="text-center">
             <h1 class="text-3xl font-extrabold tracking-tight text-neutral-900">Frequently Asked Questions</h1>
-            <p class="mt-4 text-base leading-7 text-neutral-700">Quick answers about public shopping pages, product availability, and BlazorShop support.</p>
+            <p class="mt-4 text-base leading-7 text-neutral-700">Quick answers about public shopping pages, product availability, and NutsnBerries support.</p>
         </header>
 
         <div class="mt-8 space-y-4">
@@ -39,11 +39,11 @@
         var metadataTask = SeoComposer.ComposeStaticPageAsync(
             "Frequently Asked Questions",
             StorefrontRoutes.Faq,
-            "Find quick answers about ordering, product availability, storefront pages, and general BlazorShop support.");
+            "Find quick answers about ordering, product availability, storefront pages, and general NutsnBerries support.");
         var structuredDataTask = StructuredDataComposer.ComposeFaqPageAsync(
             "Frequently Asked Questions",
             StorefrontRoutes.Faq,
-            "Find quick answers about ordering, product availability, storefront pages, and general BlazorShop support.",
+            "Find quick answers about ordering, product availability, storefront pages, and general NutsnBerries support.",
             _faqs);
 
         await Task.WhenAll(metadataTask, structuredDataTask);

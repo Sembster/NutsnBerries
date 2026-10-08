@@ -8,7 +8,7 @@
     <div class="rounded-2xl bg-white/80 p-6 shadow sm:p-8">
         <header>
             <h1 class="text-3xl font-extrabold tracking-tight text-neutral-900">Terms & Conditions</h1>
-            <p class="mt-4 text-sm leading-7 text-neutral-700">Using the BlazorShop storefront means agreeing to the current service, ordering, and account expectations.</p>
+            <p class="mt-4 text-sm leading-7 text-neutral-700">Using the NutsnBerries storefront means agreeing to the current service, ordering, and account expectations.</p>
         </header>
 
         <div class="mt-8 space-y-4 text-sm leading-7 text-neutral-700">
@@ -33,11 +33,11 @@
         var metadataTask = SeoComposer.ComposeStaticPageAsync(
             "Terms & Conditions",
             StorefrontRoutes.Terms,
-            "Read the current BlazorShop storefront terms, account responsibilities, and purchase conditions.");
+            "Read the current NutsnBerries storefront terms, account responsibilities, and purchase conditions.");
         var structuredDataTask = StructuredDataComposer.ComposeWebPageAsync(
             "Terms & Conditions",
             StorefrontRoutes.Terms,
-            "Read the current BlazorShop storefront terms, account responsibilities, and purchase conditions.");
+            "Read the current NutsnBerries storefront terms, account responsibilities, and purchase conditions.");
 
         await Task.WhenAll(metadataTask, structuredDataTask);
 

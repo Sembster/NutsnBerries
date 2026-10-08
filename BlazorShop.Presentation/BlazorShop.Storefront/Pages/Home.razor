@@ -18,7 +18,7 @@ else
         <div class="text-center">
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-neutral-500">Shop Categories</p>
             <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900">Browse by Category</h2>
-            <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-neutral-700">Explore the same BlazorShop collections and jump straight into public product pages.</p>
+            <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-neutral-700">Explore the same NutsnBerries collections and jump straight into public product pages.</p>
         </div>
 
         @if (FeaturedCategories.Count > 0)
@@ -97,7 +97,7 @@ else
         var metadataTask = SeoComposer.ComposeStaticPageAsync(
             "Shop Home",
             StorefrontRoutes.Home,
-            "Discover published products, featured categories, and route-based SEO-ready pages across the BlazorShop storefront.");
+            "Discover published products, featured categories, and route-based SEO-ready pages across the NutsnBerries storefront.");
         var structuredDataTask = StructuredDataComposer.ComposeHomePageAsync();
         var categoriesTask = ApiClient.GetPublishedCategoriesAsync();
         var latestProductsTask = ApiClient.GetPublishedCatalogPageAsync(new ProductCatalogQuery

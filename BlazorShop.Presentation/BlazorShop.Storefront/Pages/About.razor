@@ -7,23 +7,23 @@
 <section class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
     <div class="rounded-2xl bg-white/80 p-6 shadow sm:p-8">
         <header class="text-center">
-            <h1 class="text-3xl font-extrabold tracking-tight text-neutral-900">About BlazorShop</h1>
+            <h1 class="text-3xl font-extrabold tracking-tight text-neutral-900">About NutsnBerries</h1>
             <p class="mt-4 text-base leading-7 text-neutral-700">
-                BlazorShop is a layered .NET commerce application. This storefront surface focuses on server-rendered product and category pages so public catalog content is available on stable, SEO-capable routes.
+                NutsnBerries makes natural beauty products inspired by the forest floor: cold-pressed nut oils, wild berry extracts and gentle botanicals for skin, hair and body.
             </p>
         </header>
 
         <div class="mt-8 grid gap-6 md:grid-cols-2">
             <div class="rounded-2xl border border-neutral-200 bg-white/70 p-6">
-                <h2 class="text-lg font-bold text-neutral-900">What changed</h2>
+                <h2 class="text-lg font-bold text-neutral-900">Our ingredients</h2>
                 <p class="mt-3 text-sm leading-6 text-neutral-700">
-                    Public category and product discovery now lives on route-based pages backed by published-only slug lookups. Admin and legacy interactive flows still remain available in the existing client app.
+                    We start with nuts, berries and plants, and keep the ingredient lists short and honest. Everything we sell is chosen because it is kind to your skin and to the places it comes from.
                 </p>
             </div>
             <div class="rounded-2xl border border-neutral-200 bg-white/70 p-6">
-                <h2 class="text-lg font-bold text-neutral-900">Why it matters</h2>
+                <h2 class="text-lg font-bold text-neutral-900">Our promise</h2>
                 <p class="mt-3 text-sm leading-6 text-neutral-700">
-                    Search engines and social crawlers can now read real HTML responses for the main storefront pages instead of relying on modal-only product details and client-side head updates.
+                    No harsh additives and no animal testing. We favour recyclable packaging and fair sourcing, so you can feel good about what you put on your skin.
                 </p>
             </div>
         </div>
@@ -39,11 +39,11 @@
         var metadataTask = SeoComposer.ComposeStaticPageAsync(
             "About Us",
             StorefrontRoutes.About,
-            "Learn about the BlazorShop storefront, the production SEO migration, and the team behind the catalog experience.");
+            "Learn about NutsnBerries, our natural ingredients and our promise to you.");
         var structuredDataTask = StructuredDataComposer.ComposeWebPageAsync(
             "About Us",
             StorefrontRoutes.About,
-            "Learn about the BlazorShop storefront, the production SEO migration, and the team behind the catalog experience.");
+            "Learn about NutsnBerries, our natural ingredients and our promise to you.");
 
         await Task.WhenAll(metadataTask, structuredDataTask);
 
