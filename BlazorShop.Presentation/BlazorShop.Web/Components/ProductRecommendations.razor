@@ -32,7 +32,7 @@
 							}
 
 							<div class="flex items-center justify-between">
-								<span class="text-lg font-bold text-emerald-600">� @product.Price.ToString("F2")</span>
+								<span class="text-lg font-bold text-emerald-600">@PriceFormatter.Format(product.Price)</span>
 								<button class="text-xs px-2 py-1 rounded bg-neutral-900 text-white hover:bg-neutral-800 transition-colors" @onclick:stopPropagation="true" @onclick="() => QuickView(product.Id)">
 									Quick View
 								</button>

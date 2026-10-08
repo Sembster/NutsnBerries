@@ -16,6 +16,7 @@ namespace BlazorShop.Tests.Application.Services.Payment
         [InlineData(" eur ", "EUR")]
         [InlineData("usd", "USD")]
         [InlineData("GBP", "GBP")]
+        [InlineData(" sek ", "SEK")]
         public void NormalizeCurrency_NormalizesSupportedCodes(string input, string expected)
         {
             Assert.Equal(expected, CurrencyMoney.NormalizeCurrency(input));

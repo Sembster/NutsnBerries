@@ -286,7 +286,7 @@
                     labels,
                     values,
                     new ChartSeriesOptions(
-                        "Revenue (€)",
+                        $"Revenue ({PriceFormatter.CurrencyCode})",
                         "#0ea5e9",
                         "rgba(14,165,233,0.15)",
                         Tension: 0.3,

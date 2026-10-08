@@ -19,7 +19,7 @@
                           <img src="@product.Image" alt="@product.Name" class="absolute inset-0 w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-105" />
                       </div>
                       <h3 class="mt-4 text-base font-semibold">@product.Name</h3>
-                      <p class="mt-1 text-sm"><span class="text-rose-600 font-semibold">Price</span> <span class="font-semibold">€ @product.Price</span></p>
+                      <p class="mt-1 text-sm"><span class="text-rose-600 font-semibold">Price</span> <span class="font-semibold">@PriceFormatter.Format(product.Price)</span></p>
                   </div>
                   <div class="flex items-center justify-between px-6 pb-5 border-t border-neutral-100 text-sm">
                       <button class="inline-flex items-center gap-2 rounded-md bg-neutral-900 text-white px-3 py-1.5 font-medium hover:bg-neutral-800" @onclick="() => HandleAddToCart(product)">

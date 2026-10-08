@@ -39,7 +39,7 @@ public sealed class StorefrontCheckoutTests(E2EApplicationFixture application) :
                 .ToBeVisibleAsync();
             await Expect(Page.GetByText(data.SimpleProductDescription, new() { Exact = true }))
                 .ToBeVisibleAsync();
-            await Expect(Page.GetByText($"€ {Money(data.SimpleProductPrice)}", new() { Exact = true }))
+            await Expect(Page.GetByText(Price(data.SimpleProductPrice), new() { Exact = true }))
                 .ToBeVisibleAsync();
         });
     }
@@ -55,7 +55,7 @@ public sealed class StorefrontCheckoutTests(E2EApplicationFixture application) :
             var simpleLine = CartLine(data.SimpleProductName);
             await Expect(simpleLine).ToContainTextAsync("Quantity");
             await Expect(simpleLine.GetByRole(AriaRole.Spinbutton)).ToHaveValueAsync("1");
-            await Expect(simpleLine).ToContainTextAsync($"EUR {Money(data.SimpleProductPrice)}");
+            await Expect(simpleLine).ToContainTextAsync(Price(data.SimpleProductPrice));
 
             await Page.GotoAsync(ProductUrl(data.VariantProductSlug));
             var variantSelect = Page.GetByLabel("Choose a variant", new() { Exact = true });
@@ -69,7 +69,7 @@ public sealed class StorefrontCheckoutTests(E2EApplicationFixture application) :
             var variantLine = CartLine(data.VariantProductName);
             await Expect(variantLine).ToContainTextAsync($"SKU {data.VariantSku}");
             await Expect(variantLine).ToContainTextAsync($"Size {data.VariantSize}");
-            await Expect(variantLine).ToContainTextAsync($"EUR {Money(data.VariantPrice)}");
+            await Expect(variantLine).ToContainTextAsync(Price(data.VariantPrice));
 
             var variantQuantity = variantLine.GetByRole(AriaRole.Spinbutton);
             await variantQuantity.FillAsync("3");
@@ -77,8 +77,8 @@ public sealed class StorefrontCheckoutTests(E2EApplicationFixture application) :
 
             variantLine = CartLine(data.VariantProductName);
             await Expect(variantLine.GetByRole(AriaRole.Spinbutton)).ToHaveValueAsync("3");
-            await Expect(variantLine).ToContainTextAsync($"EUR {Money(data.VariantPrice * 3)}");
-            await Expect(Page.GetByText($"EUR {Money(data.SimpleProductPrice + (data.VariantPrice * 3))}", new() { Exact = true }).First)
+            await Expect(variantLine).ToContainTextAsync(Price(data.VariantPrice * 3));
+            await Expect(Page.GetByText(Price(data.SimpleProductPrice + (data.VariantPrice * 3)), new() { Exact = true }).First)
                 .ToBeVisibleAsync();
 
             await Page.ReloadAsync();
@@ -86,7 +86,7 @@ public sealed class StorefrontCheckoutTests(E2EApplicationFixture application) :
             variantLine = CartLine(data.VariantProductName);
             await Expect(variantLine.GetByRole(AriaRole.Spinbutton)).ToHaveValueAsync("3");
             await Expect(variantLine).ToContainTextAsync($"SKU {data.VariantSku}");
-            await Expect(variantLine).ToContainTextAsync($"EUR {Money(data.VariantPrice * 3)}");
+            await Expect(variantLine).ToContainTextAsync(Price(data.VariantPrice * 3));
         });
     }
 
@@ -126,7 +126,7 @@ public sealed class StorefrontCheckoutTests(E2EApplicationFixture application) :
             await Expect(checkoutRow).ToContainTextAsync($"SKU {data.VariantSku}");
             await Expect(checkoutRow).ToContainTextAsync($"Size {data.VariantSize}");
             await Expect(checkoutRow.GetByRole(AriaRole.Spinbutton)).ToHaveValueAsync("2");
-            await Expect(checkoutRow).ToContainTextAsync($"€ {Money(data.VariantPrice * 2)}");
+            await Expect(checkoutRow).ToContainTextAsync(Price(data.VariantPrice * 2));
         });
     }
 
@@ -202,8 +202,10 @@ public sealed class StorefrontCheckoutTests(E2EApplicationFixture application) :
         }
     }
 
-    private static string Money(decimal amount)
+    // Mirrors PriceFormatter for the default store currency (SEK): "1 249,50 kr".
+    private static string Price(decimal amount)
     {
-        return amount.ToString("0.00", CultureInfo.InvariantCulture);
+        var swedish = new NumberFormatInfo { NumberDecimalSeparator = ",", NumberGroupSeparator = "\u00A0" };
+        return amount.ToString("N2", swedish) + "\u00A0kr";
     }
 }

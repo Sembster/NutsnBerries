@@ -24,7 +24,7 @@ namespace BlazorShop.Storefront.Pages
 
         private int ItemCount => _lines.Sum(line => line.Quantity);
 
-        private string GrandTotalDisplay => _lines.Sum(line => line.LineTotal).ToString("0.00", CultureInfo.InvariantCulture);
+        private string GrandTotalDisplay => PriceFormatter.Format(_lines.Sum(line => line.LineTotal));
 
         private string CheckoutUrl => StorefrontRoutes.Checkout;
 
@@ -170,9 +170,9 @@ namespace BlazorShop.Storefront.Pages
         {
             public decimal LineTotal => UnitPrice * Quantity;
 
-            public string UnitPriceDisplay => UnitPrice.ToString("0.00", CultureInfo.InvariantCulture);
+            public string UnitPriceDisplay => PriceFormatter.Format(UnitPrice);
 
-            public string LineTotalDisplay => LineTotal.ToString("0.00", CultureInfo.InvariantCulture);
+            public string LineTotalDisplay => PriceFormatter.Format(LineTotal);
 
             public string? VariantLabel
             {

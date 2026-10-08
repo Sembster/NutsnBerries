@@ -60,7 +60,7 @@ public sealed class UpgradedDatabaseBrowserTests : PageTest
 
             var simpleLine = CartLine(configuration.SimpleProductName);
             await Expect(simpleLine.GetByRole(AriaRole.Spinbutton)).ToHaveValueAsync("1");
-            await Expect(simpleLine).ToContainTextAsync($"EUR {Money(configuration.SimpleProductPrice)}");
+            await Expect(simpleLine).ToContainTextAsync(Price(configuration.SimpleProductPrice));
 
             await Page.GotoAsync(ProductUrl(configuration.VariantProductSlug));
             var variantSelect = Page.GetByLabel("Choose a variant", new() { Exact = true });
@@ -74,14 +74,14 @@ public sealed class UpgradedDatabaseBrowserTests : PageTest
             var variantLine = CartLine(configuration.VariantProductName);
             await Expect(variantLine).ToContainTextAsync($"SKU {configuration.VariantSku}");
             await Expect(variantLine).ToContainTextAsync($"Size {configuration.VariantSize}");
-            await Expect(variantLine).ToContainTextAsync($"EUR {Money(configuration.VariantPrice)}");
+            await Expect(variantLine).ToContainTextAsync(Price(configuration.VariantPrice));
 
             var quantity = variantLine.GetByRole(AriaRole.Spinbutton);
             await quantity.FillAsync("3");
             await quantity.PressAsync("Tab");
             await Expect(CartLine(configuration.VariantProductName).GetByRole(AriaRole.Spinbutton)).ToHaveValueAsync("3");
             await Expect(CartLine(configuration.VariantProductName))
-                .ToContainTextAsync($"EUR {Money(configuration.VariantPrice * 3)}");
+                .ToContainTextAsync(Price(configuration.VariantPrice * 3));
 
             await Page.ReloadAsync();
             variantLine = CartLine(configuration.VariantProductName);
@@ -105,13 +105,13 @@ public sealed class UpgradedDatabaseBrowserTests : PageTest
 
             var simpleCheckoutRow = Page.GetByRole(AriaRole.Row).Filter(new() { HasText = configuration.SimpleProductName });
             await Expect(simpleCheckoutRow.GetByRole(AriaRole.Spinbutton)).ToHaveValueAsync("1");
-            await Expect(simpleCheckoutRow).ToContainTextAsync($"€ {Money(configuration.SimpleProductPrice)}");
+            await Expect(simpleCheckoutRow).ToContainTextAsync(Price(configuration.SimpleProductPrice));
 
             var variantCheckoutRow = Page.GetByRole(AriaRole.Row).Filter(new() { HasText = configuration.VariantProductName });
             await Expect(variantCheckoutRow).ToContainTextAsync($"SKU {configuration.VariantSku}");
             await Expect(variantCheckoutRow).ToContainTextAsync($"Size {configuration.VariantSize}");
             await Expect(variantCheckoutRow.GetByRole(AriaRole.Spinbutton)).ToHaveValueAsync("3");
-            await Expect(variantCheckoutRow).ToContainTextAsync($"€ {Money(configuration.VariantPrice * 3)}");
+            await Expect(variantCheckoutRow).ToContainTextAsync(Price(configuration.VariantPrice * 3));
 
             File.Delete(tracePath);
         }
@@ -183,8 +183,10 @@ public sealed class UpgradedDatabaseBrowserTests : PageTest
         return new Uri(configuration.StorefrontBaseUrl, $"product/{slug}").ToString();
     }
 
-    private static string Money(decimal amount)
+    // Mirrors PriceFormatter for the default store currency (SEK): "1 249,50 kr".
+    private static string Price(decimal amount)
     {
-        return amount.ToString("0.00", CultureInfo.InvariantCulture);
+        var swedish = new NumberFormatInfo { NumberDecimalSeparator = ",", NumberGroupSeparator = "\u00A0" };
+        return amount.ToString("N2", swedish) + "\u00A0kr";
     }
 }

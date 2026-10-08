@@ -24,7 +24,7 @@
                                 <div class="flex items-center gap-2">
                                     <img src="@p.Image" alt="@p.Name" class="h-6 w-6 rounded object-cover" />
                                     <span>@p.Name</span>
-                                    <span class="ml-auto text-xs text-neutral-500">€ @p.Price</span>
+                                    <span class="ml-auto text-xs text-neutral-500">@PriceFormatter.Format(p.Price)</span>
                                 </div>
                             </button>
                         }

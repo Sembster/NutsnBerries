@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+BlazorShop.Web.Shared.Helper.PriceFormatter.Configure(builder.Configuration["Commerce:Currency"]);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.SectionName));

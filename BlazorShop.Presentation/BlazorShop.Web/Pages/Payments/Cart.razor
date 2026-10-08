@@ -37,7 +37,7 @@
                             <tr class="bg-neutral-100 text-left">
                                 <th class="px-3 py-2">Image</th>
                                 <th class="px-3 py-2 w-56">Name</th>
-                                <th class="px-3 py-2">Price (€)</th>
+                                <th class="px-3 py-2">Price (@PriceFormatter.CurrencyCode)</th>
                                 <th class="px-3 py-2">Quantity</th>
                                 <th class="px-3 py-2">Total</th>
                                 <th class="px-3 py-2 text-center">Actions</th>
@@ -64,7 +64,7 @@
                                             <div class="mt-2 text-xs font-medium text-amber-800">Unavailable in catalog</div>
                                         }
                                     </td>
-                                    <td class="px-3 py-2">€ @line.UnitPrice.ToString("F2")</td>
+                                    <td class="px-3 py-2">@PriceFormatter.Format(line.UnitPrice)</td>
                                     <td class="px-3 py-2">
                                         <input class="w-20 text-center border rounded px-2 py-1"
                                                type="number"
@@ -73,7 +73,7 @@
                                                disabled="@IsCartLineBusy(line.ProductId, line.VariantId)"
                                                @onchange="(e) => HandleInputChange(e, line.ProductId, line.VariantId)" />
                                     </td>
-                                    <td class="px-3 py-2">€ @line.LineTotal.ToString("F2")</td>
+                                    <td class="px-3 py-2">@PriceFormatter.Format(line.LineTotal)</td>
                                     <td class="px-3 py-2 text-center">
                                         <button class="text-red-600 hover:text-red-700 disabled:opacity-60" title="Remove" @onclick="() => RemoveCartItem(line.ProductId, line.VariantId)" disabled="@IsCartLineBusy(line.ProductId, line.VariantId)">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 7h12M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m-1 0l-1 12a2 2 0 01-2 2h-2a2 2 0 01-2-2L8 7"/></svg>
@@ -92,7 +92,7 @@
                     </div>
                 }
                 <div class="mt-4 flex items-center justify-between">
-                    <h4 class="text-lg font-bold">Total: € @CartGrandTotal.ToString("F2")</h4>
+                    <h4 class="text-lg font-bold">Total: @PriceFormatter.Format(CartGrandTotal)</h4>
                     <div>
                         <AuthorizeView>
                             <Authorized>

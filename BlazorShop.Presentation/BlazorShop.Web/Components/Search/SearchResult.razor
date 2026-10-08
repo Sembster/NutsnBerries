@@ -102,7 +102,7 @@
                                 {
                                     <div class="mt-1 text-xs font-medium uppercase tracking-wide text-neutral-500">@product.CategoryName</div>
                                 }
-                                <div class="mt-1 text-sm text-neutral-600">Price: <span class="font-semibold text-neutral-900">€ @product.Price</span></div>
+                                <div class="mt-1 text-sm text-neutral-600">Price: <span class="font-semibold text-neutral-900">@PriceFormatter.Format(product.Price)</span></div>
                             </div>
                         </div>
 

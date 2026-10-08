@@ -62,11 +62,11 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
       <div class="bs-metric-card p-4">
         <div class="text-sm text-neutral-500">Total Revenue</div>
-        <div class="text-2xl font-bold">€ @_totalRevenue.ToString("F2")</div>
+        <div class="text-2xl font-bold">@PriceFormatter.Format(_totalRevenue)</div>
       </div>
       <div class="bs-metric-card p-4">
         <div class="text-sm text-neutral-500">Today's Revenue</div>
-        <div class="text-2xl font-bold">€ @_todayRevenue.ToString("F2")</div>
+        <div class="text-2xl font-bold">@PriceFormatter.Format(_todayRevenue)</div>
       </div>
       <div class="bs-metric-card p-4">
         <div class="text-sm text-neutral-500">Orders</div>
@@ -120,8 +120,8 @@
               <span>Sales</span>
               <span class="uppercase tracking-wide">@_salesSeries?.Granularity</span>
             </div>
-            <div class="text-2xl font-bold mt-2">€@(_salesSeries?.Total.ToString("F2") ?? "0.00")</div>
-            <div class="text-xs text-neutral-500">Prev: €@(_salesSeries?.PreviousTotal.ToString("F2") ?? "0.00")
+            <div class="text-2xl font-bold mt-2">@PriceFormatter.Format(_salesSeries?.Total ?? 0m)</div>
+            <div class="text-xs text-neutral-500">Prev: @PriceFormatter.Format(_salesSeries?.PreviousTotal ?? 0m)
               <span class="ml-1 font-semibold @(GetTrendClass(_salesSeries?.TrendPercentage ?? 0))">@FormatTrend(_salesSeries?.TrendPercentage ?? 0)</span>
             </div>
             <div class="mt-4 chart-block">
@@ -181,7 +181,7 @@
               <div class="rounded-2xl border border-slate-200 bg-white/80 px-4 py-4 text-sm">
                 <div class="font-semibold text-slate-950">@product.Name</div>
                 <div class="mt-1 text-slate-600">Qty: @product.Quantity</div>
-                <div class="mt-1 text-slate-600">Revenue: € @product.Revenue.ToString("F2")</div>
+                <div class="mt-1 text-slate-600">Revenue: @PriceFormatter.Format(product.Revenue)</div>
               </div>
             }
           </div>
@@ -301,7 +301,7 @@
 
         <article class="bs-table-shell mt-6 overflow-hidden">
           <div class="bg-slate-50/90 px-4 py-3 font-semibold">
-            @g.Key.ToShortDateString() - Total: € @daily.ToString("F2")
+            @g.Key.ToShortDateString() - Total: @PriceFormatter.Format(daily)
           </div>
           <div class="p-4 overflow-x-auto">
             <table class="bs-table-wide min-w-full text-sm">
@@ -311,7 +311,7 @@
                   <th class="px-3 py-2">Email</th>
                   <th class="px-3 py-2">Product</th>
                   <th class="px-3 py-2">Quantity</th>
-                  <th class="px-3 py-2">Amount (€)</th>
+                  <th class="px-3 py-2">Amount (@PriceFormatter.CurrencyCode)</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-neutral-200">
@@ -331,7 +331,7 @@
         </article>
       }
       <footer class="mt-4 text-right font-bold">
-        Grand Total: € @grand.ToString("F2")
+        Grand Total: @PriceFormatter.Format(grand)
       </footer>
     }
     else

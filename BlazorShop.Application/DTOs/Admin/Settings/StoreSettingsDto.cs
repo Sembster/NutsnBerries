@@ -8,7 +8,7 @@ namespace BlazorShop.Application.DTOs.Admin.Settings
 
         public string StoreSupportPhone { get; set; } = string.Empty;
 
-        public string DefaultCurrency { get; set; } = "EUR";
+        public string DefaultCurrency { get; set; } = "SEK";
 
         public string DefaultCulture { get; set; } = "en-US";
 

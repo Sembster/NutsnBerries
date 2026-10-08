@@ -16,7 +16,7 @@
                             <div class="flex items-start justify-between">
                                 <h3 class="text-lg font-extrabold text-neutral-900">@product.Name</h3>
                             </div>
-                            <p class="mt-2 text-sm"><span class="text-rose-600 font-semibold">Price</span> <span class="font-semibold">€ @product.Price</span></p>
+                            <p class="mt-2 text-sm"><span class="text-rose-600 font-semibold">Price</span> <span class="font-semibold">@PriceFormatter.Format(product.Price)</span></p>
                             <div class="mt-5 relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-50">
                                 <img src="@product.Image" alt="@product.Name" class="absolute inset-0 w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-105" />
                             </div>

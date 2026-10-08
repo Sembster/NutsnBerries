@@ -20,7 +20,7 @@
     "WebhookSecret": "<set-in-secret-store-or-env>"
   },
   "Commerce": {
-    "Currency": "EUR"
+    "Currency": "SEK"
   },
   "EmailSettings": {
     "From": "<required-sender-address>",

@@ -9,7 +9,7 @@
                     </div>
                     <h5 class="text-base sm:text-lg font-semibold">@Product?.Name</h5>
                 </div>
-                <div class="text-sm font-semibold bg-white/10 rounded px-2 py-0.5">€ @DisplayedPrice</div>
+                <div class="text-sm font-semibold bg-white/10 rounded px-2 py-0.5">@PriceFormatter.Format(DisplayedPrice)</div>
             </div>
         </Header>
         <Body>
@@ -28,7 +28,7 @@
                                 <option value="">-- Select size --</option>
                                 @foreach (var v in Product.Variants)
                                 {
-                                    <option value="@v.Id">@v.SizeValue (@ScaleLabel(v.SizeScale)) @(v.Price.HasValue ? $"- € {v.Price}" : string.Empty)</option>
+                                    <option value="@v.Id">@v.SizeValue (@ScaleLabel(v.SizeScale)) @(v.Price.HasValue ? $"- {PriceFormatter.Format(v.Price.Value)}" : string.Empty)</option>
                                 }
                             </select>
                         </div>
@@ -36,7 +36,7 @@
 
                     <div class="mt-2">
                         <div class="text-sm text-neutral-500">Price</div>
-                        <div class="text-2xl font-extrabold">€ @DisplayedPrice</div>
+                        <div class="text-2xl font-extrabold">@PriceFormatter.Format(DisplayedPrice)</div>
                     </div>
                 </div>
             </div>

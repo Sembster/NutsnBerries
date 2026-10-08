@@ -143,7 +143,7 @@ Core values commonly required:
 - `ConnectionStrings:DefaultConnection`
 - `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience`
 - `Stripe:Enabled`, `Stripe:SecretKey`, `Stripe:WebhookSecret`
-- `Commerce:Currency` (required store currency; currently supports `EUR`, `GBP`, and `USD`)
+- `Commerce:Currency` (required store currency; currently supports `EUR`, `GBP`, `SEK`, and `USD`)
 - `BankTransfer:Iban`, `BankTransfer:Beneficiary`, `BankTransfer:BankName`, `BankTransfer:AdditionalInfo`
 - `EmailSettings:From`, `DisplayName`, `SmtpServer`, `Port`, `UseSsl`, `Username`, `Password`
 

@@ -87,7 +87,7 @@
                                         <div class="grid gap-4 sm:grid-cols-3">
                                             <div>
                                                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">Unit Price</p>
-                                                <p class="mt-1 text-lg font-bold text-neutral-900">EUR @line.UnitPriceDisplay</p>
+                                                <p class="mt-1 text-lg font-bold text-neutral-900">@line.UnitPriceDisplay</p>
                                             </div>
 
                                             <label class="block">
@@ -106,7 +106,7 @@
 
                                             <div>
                                                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">Line Total</p>
-                                                <p class="mt-1 text-lg font-bold text-neutral-900">EUR @line.LineTotalDisplay</p>
+                                                <p class="mt-1 text-lg font-bold text-neutral-900">@line.LineTotalDisplay</p>
                                             </div>
                                         </div>
 
@@ -145,11 +145,11 @@
                     </div>
                     <div class="flex items-center justify-between gap-3">
                         <dt>Subtotal</dt>
-                        <dd class="font-semibold text-neutral-900">EUR @GrandTotalDisplay</dd>
+                        <dd class="font-semibold text-neutral-900">@GrandTotalDisplay</dd>
                     </div>
                     <div class="flex items-center justify-between gap-3 border-t border-neutral-200 pt-3 text-base">
                         <dt class="font-semibold text-neutral-900">Total</dt>
-                        <dd class="font-black text-neutral-900">EUR @GrandTotalDisplay</dd>
+                        <dd class="font-black text-neutral-900">@GrandTotalDisplay</dd>
                     </div>
                 </dl>
 

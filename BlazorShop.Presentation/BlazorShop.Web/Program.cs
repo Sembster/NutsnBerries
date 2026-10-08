@@ -26,6 +26,8 @@ namespace BlazorShop.Web
             builder.RootComponents.Add<App>("#app");
             builder.RootComponents.Add<HeadOutlet>("head::after");
 
+            PriceFormatter.Configure(builder.Configuration["Commerce:Currency"]);
+
             var apiBaseAddress = await ResolveApiBaseAddressAsync(builder);
 
             builder.Services.AddSingleton<IBrowserCookieStorageService, BrowserCookieStorageService>();

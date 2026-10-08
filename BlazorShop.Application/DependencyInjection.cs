@@ -55,7 +55,7 @@
                     options.Currency = CurrencyMoney.NormalizeCurrency(options.Currency))
                 .Validate(
                     options => CurrencyMoney.IsSupportedCurrency(options.Currency),
-                    $"{CommerceOptions.SectionName}:Currency must be one of EUR, GBP, or USD.")
+                    $"{CommerceOptions.SectionName}:Currency must be one of EUR, GBP, SEK, or USD.")
                 .ValidateOnStart();
 
             services.AddValidatorsFromAssemblyContaining<CreateUserValidator>();

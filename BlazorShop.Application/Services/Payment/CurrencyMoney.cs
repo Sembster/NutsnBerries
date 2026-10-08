@@ -8,6 +8,7 @@ namespace BlazorShop.Application.Services.Payment
                 ["EUR"] = 2,
                 ["GBP"] = 2,
                 ["USD"] = 2,
+                ["SEK"] = 2,
             };
 
         public static string NormalizeCurrency(string? currency) =>
