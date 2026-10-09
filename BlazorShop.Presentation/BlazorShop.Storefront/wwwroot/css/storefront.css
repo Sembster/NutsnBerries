@@ -464,5 +464,5 @@
     background:
         radial-gradient(circle at 18% 22%, rgba(184, 59, 94, 0.18) 0, transparent 38%),
         radial-gradient(circle at 82% 70%, rgba(138, 166, 138, 0.42) 0, transparent 45%),
-        linear-gradient(135deg, #eef2e6 0%, #fbf8f1 55%, #f3e6df 100%);
+        linear-gradient(160deg, #eef2e6 0%, #fbf8f1 55%, #f3e6df 100%);
 }

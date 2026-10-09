@@ -5,6 +5,7 @@ namespace BlazorShop.Storefront.Pages
 
     using BlazorShop.Storefront.Services;
     using BlazorShop.Web.Shared;
+    using BlazorShop.Web.Shared.Helper;
     using BlazorShop.Web.Shared.Models.Payment;
     using BlazorShop.Web.Shared.Models.Product;
 

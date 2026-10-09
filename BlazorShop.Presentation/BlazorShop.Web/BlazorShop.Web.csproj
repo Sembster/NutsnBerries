@@ -26,6 +26,7 @@
 
   <!-- Restore npm dependencies only when package inputs change -->
   <Target Name="RestoreNodeModules"
+          Condition="'$(SkipNpm)' != 'true'"
           BeforeTargets="Build"
           Inputs="$(MSBuildProjectDirectory)\package.json;$(MSBuildProjectDirectory)\package-lock.json"
           Outputs="$(MSBuildProjectDirectory)\node_modules\.package-lock.json">
@@ -34,7 +35,8 @@
   </Target>
 
   <!-- Tailwind build on publish/build -->
-  <Target Name="TailwindBuild" BeforeTargets="Build" DependsOnTargets="RestoreNodeModules">
+  <Target Name="TailwindBuild" BeforeTargets="Build" DependsOnTargets="RestoreNodeModules"
+          Condition="'$(SkipNpm)' != 'true'">
     <Message Text="Running Tailwind build..." Importance="high" />
     <Exec Command="npm run tailwind:build" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>

@@ -19,8 +19,8 @@ namespace BlazorShop.Tests.Presentation.Storefront
             Assert.DoesNotContain("HeaderShell", markup);
             Assert.DoesNotContain("@<>", markup);
             Assert.DoesNotContain("</>", markup);
-            Assert.Contains("BLAZORSHOP", markup);
-            Assert.Contains("PUBLIC SHOP", markup);
+            Assert.Contains("NUTSNBERRIES", markup);
+            Assert.Contains("NATURAL BEAUTY", markup);
             Assert.Contains("Home", markup);
             Assert.Contains("New Releases", markup);
             Assert.Contains("Today's Deals", markup);
@@ -72,7 +72,7 @@ namespace BlazorShop.Tests.Presentation.Storefront
             Assert.Contains(".bs-storefront-header__shell::before", styles);
             Assert.Contains(".bs-storefront-header__desktop", styles);
             Assert.Contains(".bs-storefront-header__mobile", styles);
-            Assert.Contains("rgba(23, 23, 23, 0.98)", styles);
+            Assert.Contains("rgba(30, 52, 40, 0.98)", styles);
             Assert.Contains("clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%)", styles);
             Assert.Contains("@media (min-width: 1024px)", styles);
             Assert.Contains("clip-path: none;", styles);

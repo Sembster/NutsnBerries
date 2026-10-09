@@ -49,7 +49,7 @@ namespace BlazorShop.Tests.Presentation.Storefront
             Assert.Contains("My Cart", content, StringComparison.Ordinal);
             Assert.Contains("Metro Runner", content, StringComparison.Ordinal);
             Assert.Contains("value=\"2\"", content, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("259.90", content, StringComparison.Ordinal);
+            Assert.Contains("259,90", content, StringComparison.Ordinal);
             Assert.Contains("href=\"/checkout\"", content, StringComparison.Ordinal);
             Assert.Contains("data-storefront-cart-remove", content, StringComparison.Ordinal);
             Assert.Contains("data-storefront-cart-quantity", content, StringComparison.Ordinal);

@@ -6,6 +6,7 @@
     using System.Globalization;
     using System.Threading.Tasks;
     using BlazorShop.Web.Shared;
+    using BlazorShop.Web.Shared.Helper;
     using BlazorShop.Web.Shared.Models;
     using BlazorShop.Web.Shared.Models.Payment;
     using BlazorShop.Web.Shared.Models.Analytics;
