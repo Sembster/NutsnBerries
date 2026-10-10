@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Elderberry Shine Conditioner">
+<title>Elderberry Shine Conditioner</title>
+<rect width="600" height="600" fill="#efe3cf"/>
+<circle cx="300" cy="320" r="215" fill="#fbf8f1" opacity="0.55"/>
+<path d="M60 120 q40 -52 90 -30 q-18 56 -90 30z" fill="#a8825a" opacity="0.55"/><path d="M430 90 q40 -52 90 -30 q-18 56 -90 30z" fill="#1e3428" opacity="0.55"/><path d="M440 520 q40 -52 90 -30 q-18 56 -90 30z" fill="#a8825a" opacity="0.55"/>
+<ellipse cx="300" cy="452" rx="130" ry="16" fill="#1e3428" opacity="0.14"/>
+<rect x="270" y="130" width="60" height="50" rx="8" fill="#1e3428"/><rect x="228" y="170" width="144" height="275" rx="38" fill="#a8825a"/><rect x="248" y="270" width="104" height="100" rx="8" fill="#fbf8f1"/>
+<text x="300" y="548" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#1e3428">Elderberry Shine Conditioner</text>
+</svg>
