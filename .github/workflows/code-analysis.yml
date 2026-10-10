@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+defaults:
+  run:
+    working-directory: Lab1/NutsnBerries
+
 jobs:
   analyze:
     runs-on: ubuntu-latest
@@ -19,7 +23,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        global-json-file: global.json
+        global-json-file: Lab1/NutsnBerries/global.json
 
     # Restore dependencies
     - name: Restore Dependencies

@@ -8,6 +8,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+defaults:
+  run:
+    working-directory: Lab1/NutsnBerries
+
 jobs:
   build-test:
     runs-on: ubuntu-latest
@@ -19,28 +23,28 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          global-json-file: global.json
+          global-json-file: Lab1/NutsnBerries/global.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: BlazorShop.Presentation/BlazorShop.Web/package-lock.json
+          cache-dependency-path: Lab1/NutsnBerries/BlazorShop.Presentation/BlazorShop.Web/package-lock.json
 
       - name: Install Web build dependencies from lockfile
-        working-directory: BlazorShop.Presentation/BlazorShop.Web
+        working-directory: Lab1/NutsnBerries/BlazorShop.Presentation/BlazorShop.Web
         run: npm ci --include=dev
 
       - name: Audit shipped npm runtime dependencies
-        working-directory: BlazorShop.Presentation/BlazorShop.Web
+        working-directory: Lab1/NutsnBerries/BlazorShop.Presentation/BlazorShop.Web
         run: |
           mkdir -p ../../artifacts/npm-audit
           npm audit --omit=dev --audit-level=high --json > ../../artifacts/npm-audit/runtime.json
 
       - name: Audit full npm build dependency tree
         if: always()
-        working-directory: BlazorShop.Presentation/BlazorShop.Web
+        working-directory: Lab1/NutsnBerries/BlazorShop.Presentation/BlazorShop.Web
         run: |
           mkdir -p ../../artifacts/npm-audit
           npm audit --include=dev --audit-level=high --json > ../../artifacts/npm-audit/full.json
@@ -50,7 +54,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: npm-audit-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/npm-audit/*.json
+          path: Lab1/NutsnBerries/artifacts/npm-audit/*.json
           if-no-files-found: error
 
       - name: Restore
@@ -101,17 +105,17 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          global-json-file: global.json
+          global-json-file: Lab1/NutsnBerries/global.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: BlazorShop.Presentation/BlazorShop.Web/package-lock.json
+          cache-dependency-path: Lab1/NutsnBerries/BlazorShop.Presentation/BlazorShop.Web/package-lock.json
 
       - name: Install Web build dependencies from lockfile
-        working-directory: BlazorShop.Presentation/BlazorShop.Web
+        working-directory: Lab1/NutsnBerries/BlazorShop.Presentation/BlazorShop.Web
         run: npm ci --include=dev
 
       - name: Restore browser E2E project
@@ -147,7 +151,7 @@ jobs:
       - name: Run browser E2E suite (first consecutive run)
         shell: pwsh
         env:
-          BLAZORSHOP_E2E_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts/e2e/run-1
+          BLAZORSHOP_E2E_ARTIFACTS_DIR: ${{ github.workspace }}/Lab1/NutsnBerries/artifacts/e2e/run-1
         run: |
           $logPath = "artifacts/e2e/run-1/application-output.log"
           New-Item -ItemType Directory -Force -Path (Split-Path $logPath) | Out-Null
@@ -176,7 +180,7 @@ jobs:
       - name: Run browser E2E suite (second consecutive run)
         shell: pwsh
         env:
-          BLAZORSHOP_E2E_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts/e2e/run-2
+          BLAZORSHOP_E2E_ARTIFACTS_DIR: ${{ github.workspace }}/Lab1/NutsnBerries/artifacts/e2e/run-2
         run: |
           $logPath = "artifacts/e2e/run-2/application-output.log"
           New-Item -ItemType Directory -Force -Path (Split-Path $logPath) | Out-Null
@@ -212,7 +216,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: browser-e2e-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/e2e
+          path: Lab1/NutsnBerries/artifacts/e2e
           if-no-files-found: error
           retention-days: 14
 
@@ -228,7 +232,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          global-json-file: global.json
+          global-json-file: Lab1/NutsnBerries/global.json
 
       - name: Restore
         run: dotnet restore BlazorShop.sln

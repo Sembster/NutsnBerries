@@ -14,6 +14,10 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    working-directory: Lab1/NutsnBerries
+
 jobs:
   publish-release-artifacts:
     runs-on: ubuntu-latest
@@ -25,7 +29,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          global-json-file: global.json
+          global-json-file: Lab1/NutsnBerries/global.json
 
       - name: Restore
         run: dotnet restore BlazorShop.sln
@@ -44,16 +48,17 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           SAFE_TAG="$(printf '%s' "$RELEASE_TAG" | tr -c 'A-Za-z0-9._-' '-')"
-          mkdir -p release-assets
-          tar -C artifacts/api -czf "$GITHUB_WORKSPACE/release-assets/blazorshop-api-${SAFE_TAG}.tar.gz" .
-          tar -C artifacts/storefront -czf "$GITHUB_WORKSPACE/release-assets/blazorshop-storefront-${SAFE_TAG}.tar.gz" .
-          tar -C artifacts/account -czf "$GITHUB_WORKSPACE/release-assets/blazorshop-account-${SAFE_TAG}.tar.gz" .
+          ASSETS="$PWD/release-assets"
+          mkdir -p "$ASSETS"
+          tar -C artifacts/api -czf "$ASSETS/blazorshop-api-${SAFE_TAG}.tar.gz" .
+          tar -C artifacts/storefront -czf "$ASSETS/blazorshop-storefront-${SAFE_TAG}.tar.gz" .
+          tar -C artifacts/account -czf "$ASSETS/blazorshop-account-${SAFE_TAG}.tar.gz" .
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
           name: blazorshop-${{ github.run_id }}
-          path: release-assets/*.tar.gz
+          path: Lab1/NutsnBerries/release-assets/*.tar.gz
           if-no-files-found: error
 
       - name: Attach artifacts to GitHub release
