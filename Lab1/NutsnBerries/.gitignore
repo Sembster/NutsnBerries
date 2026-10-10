@@ -375,3 +375,5 @@ FodyWeavers.xsd
 
 # Local secrets
 .env
+# Local-only Web client config (HTTP API on localhost)
+**/wwwroot/appsettings.Local.json

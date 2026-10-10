@@ -197,8 +197,8 @@ namespace BlazorShop.Storefront.Services
                 return null;
             }
 
-            var siteName = FirstNonEmpty(settings?.SiteName, settings?.CompanyName, "BlazorShop");
-            var organizationName = FirstNonEmpty(settings?.CompanyName, settings?.SiteName, "BlazorShop");
+            var siteName = FirstNonEmpty(settings?.SiteName, settings?.CompanyName, "NutsnBerries");
+            var organizationName = FirstNonEmpty(settings?.CompanyName, settings?.SiteName, "NutsnBerries");
 
             return new StructuredDataContext(
                 baseUrl,

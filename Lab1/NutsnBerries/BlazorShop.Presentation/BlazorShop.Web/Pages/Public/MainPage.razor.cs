@@ -70,7 +70,7 @@
             {
                 PageTitle = $"{this.SelectedCategory.Name} Products",
                 RelativePath = $"/main/products/category/{this.CategoryId}",
-                FallbackMetaDescription = $"Browse {this.SelectedCategory.Name} products in the BlazorShop app.",
+                FallbackMetaDescription = $"Browse {this.SelectedCategory.Name} products in the NutsnBerries app.",
                 PageSeo = StorefrontSeoPageData.FromCategory(this.SelectedCategory),
             });
 
@@ -180,7 +180,7 @@
                 RelativePath = string.IsNullOrWhiteSpace(this.CategoryId)
                     ? "/main/products/category"
                     : $"/main/products/category/{this.CategoryId}",
-                FallbackMetaDescription = "Browse products by category in the BlazorShop app.",
+                FallbackMetaDescription = "Browse products by category in the NutsnBerries app.",
             });
         }
     }

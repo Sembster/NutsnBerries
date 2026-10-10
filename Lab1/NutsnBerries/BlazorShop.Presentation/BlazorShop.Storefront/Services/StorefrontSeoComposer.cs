@@ -47,7 +47,7 @@ namespace BlazorShop.Storefront.Services
                 PageTitle = $"{category.Name} Products",
                 RelativePath = StorefrontRoutes.Category(category.Slug),
                 Settings = settings,
-                PageSeo = MapCategorySeo(category, $"Browse {category.Name} products, descriptions, pricing, and availability in the BlazorShop catalog."),
+                PageSeo = MapCategorySeo(category, $"Browse {category.Name} products, descriptions, pricing, and availability in the NutsnBerries catalog."),
             });
         }
 

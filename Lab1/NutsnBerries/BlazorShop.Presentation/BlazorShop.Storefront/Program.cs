@@ -84,7 +84,7 @@ app.UseStatusCodePages(async statusCodeContext =>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <meta name="robots" content="noindex,nofollow">
-          <title>{{title}} | BlazorShop</title>
+          <title>{{title}} | NutsnBerries</title>
         </head>
         <body>
           <main>

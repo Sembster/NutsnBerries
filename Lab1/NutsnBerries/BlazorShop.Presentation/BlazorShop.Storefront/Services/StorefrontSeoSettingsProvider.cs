@@ -82,8 +82,8 @@ namespace BlazorShop.Storefront.Services
         {
             return new SeoSettingsDto
             {
-                SiteName = _configuration["StorefrontSeo:SiteName"] ?? "BlazorShop",
-                DefaultTitleSuffix = _configuration["StorefrontSeo:DefaultTitleSuffix"] ?? "| BlazorShop",
+                SiteName = _configuration["StorefrontSeo:SiteName"] ?? "NutsnBerries",
+                DefaultTitleSuffix = _configuration["StorefrontSeo:DefaultTitleSuffix"] ?? "| NutsnBerries",
                 DefaultMetaDescription = _configuration["StorefrontSeo:DefaultMetaDescription"] ?? "Discover published categories and products across the BlazorShop storefront.",
                 DefaultOgImage = _configuration["StorefrontSeo:DefaultOgImage"],
                 BaseCanonicalUrl = _configuration["StorefrontSeo:BaseCanonicalUrl"],
