@@ -14,9 +14,10 @@ namespace BlazorShop.Application.Services.Payment
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
 
+    using static BlazorShop.Application.Services.Payment.CheckoutOutcomes;
+
     public sealed class CheckoutOrchestrator : ICheckoutOrchestrator
     {
-        private const int OutcomeVersion = 1;
         private const int StripeInitializationVersion = 2;
         private static readonly TimeSpan StripeRecoveryTimeout = TimeSpan.FromSeconds(15);
         private readonly IProductReadRepository _productReadRepository;
@@ -175,7 +176,7 @@ namespace BlazorShop.Application.Services.Payment
             Order order;
             try
             {
-                order = CreateOrder(
+                order = CheckoutOrderFactory.CreateOrder(
                     resolution.Lines,
                     userId,
                     claim.Record.OrderId,
@@ -1016,67 +1017,6 @@ namespace BlazorShop.Application.Services.Payment
             return CartLineResolution.Success(resolvedLines);
         }
 
-        private static Order CreateOrder(
-            IReadOnlyCollection<ResolvedCartLine> lines,
-            string userId,
-            Guid orderId,
-            string orderReference,
-            CheckoutPaymentKind paymentKind,
-            string currency,
-            AppUser customer)
-        {
-            var normalizedCurrency = CurrencyMoney.NormalizeCurrency(currency);
-            var orderLines = lines.Select(line =>
-            {
-                var unitPrice = CurrencyMoney.NormalizeAmount(line.UnitPrice, normalizedCurrency);
-                var lineTotal = checked(unitPrice * line.Quantity);
-                return new OrderLine
-                {
-                    ProductId = line.ProductId,
-                    ProductVariantId = line.VariantId,
-                    ProductNameSnapshot = line.ProductName,
-                    SkuSnapshot = line.Sku,
-                    SizeScaleSnapshot = line.SizeScale?.ToString(),
-                    SizeValueSnapshot = line.SizeValue,
-                    ColorSnapshot = line.Color,
-                    Quantity = line.Quantity,
-                    UnitPrice = unitPrice,
-                    LineTotal = lineTotal,
-                };
-            }).ToList();
-            var totalAmount = orderLines.Aggregate(0m, (total, line) => checked(total + line.LineTotal));
-            _ = CurrencyMoney.ToMinorUnits(totalAmount, normalizedCurrency);
-            return new Order
-            {
-                Id = orderId,
-                UserId = userId,
-                OrderStatus = paymentKind == CheckoutPaymentKind.Stripe
-                    ? OrderStatus.Pending
-                    : OrderStatus.Confirmed,
-                PaymentStatus = OrderPaymentStatus.Pending,
-                PaymentMethod = paymentKind switch
-                {
-                    CheckoutPaymentKind.CashOnDelivery => OrderPaymentMethod.CashOnDelivery,
-                    CheckoutPaymentKind.BankTransfer => OrderPaymentMethod.BankTransfer,
-                    CheckoutPaymentKind.Stripe => OrderPaymentMethod.Stripe,
-                    _ => throw new ArgumentOutOfRangeException(nameof(paymentKind), paymentKind, null),
-                },
-                FulfillmentStatus = FulfillmentStatus.NotStarted,
-                Reference = orderReference,
-                TotalAmount = totalAmount,
-                SubtotalAmount = totalAmount,
-                DiscountAmount = 0m,
-                ShippingAmount = 0m,
-                TaxAmount = 0m,
-                Currency = normalizedCurrency,
-                CustomerNameSnapshot = string.IsNullOrWhiteSpace(customer.FullName)
-                    ? customer.UserName
-                    : customer.FullName,
-                CustomerEmailSnapshot = customer.Email,
-                Lines = orderLines,
-            };
-        }
-
         private StripeCheckoutInitialization CreateStripeInitialization(
             Order order,
             PaymentTransaction paymentTransaction)
@@ -1180,44 +1120,6 @@ namespace BlazorShop.Application.Services.Payment
                     info.Reference);
             }
         }
-
-        private static PersistedCheckoutOutcome CreateSuccessOutcome(
-            Order order,
-            CheckoutStatus status,
-            CheckoutPaymentKind paymentKind,
-            string message,
-            string? redirectUrl = null,
-            BankTransferInfo? bankTransfer = null) => new(
-                OutcomeVersion,
-                CheckoutExecutionStatus.Succeeded,
-                new ServiceResponse<CheckoutResult>(true, message, order.Id)
-                {
-                    Payload = new CheckoutResult(
-                        order.Id,
-                        order.Reference,
-                        status,
-                        paymentKind,
-                        redirectUrl,
-                        bankTransfer),
-                    ResponseType = ServiceResponseType.Success,
-                });
-
-        private static PersistedCheckoutOutcome CreateFailureOutcome(string message) => new(
-            OutcomeVersion,
-            CheckoutExecutionStatus.BadRequest,
-            new ServiceResponse<CheckoutResult>(false, message)
-            {
-                ResponseType = ServiceResponseType.ValidationError,
-            });
-
-        private static CheckoutExecutionResult FromPersistedOutcome(
-            PersistedCheckoutOutcome outcome,
-            bool isReplay = false) => outcome.Status switch
-            {
-                CheckoutExecutionStatus.Succeeded => CheckoutExecutionResult.Succeeded(outcome.Response, isReplay),
-                CheckoutExecutionStatus.BadRequest => CheckoutExecutionResult.Invalid(outcome.Response, isReplay),
-                _ => throw new InvalidOperationException("Only terminal checkout outcomes may be persisted."),
-            };
 
         private async Task<CheckoutExecutionResult> ReplayPersistedOutcomeAsync(
             PersistedCheckoutOutcome outcome,
