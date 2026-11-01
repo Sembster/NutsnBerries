@@ -106,6 +106,7 @@ namespace BlazorShop.API
 
             builder.Services.AddInfrastructure(builder.Configuration);
             builder.Services.AddApplication(builder.Configuration);
+            builder.Services.AddNutsnBerriesHardening(builder.Configuration);
             builder.Services.AddOptions<IdentityConfirmationOptions>()
                 .Bind(identitySection)
                 .ValidateOnStart();

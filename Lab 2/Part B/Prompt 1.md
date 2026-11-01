@@ -53,6 +53,8 @@ I reviewed the code against the ten architectural principles and the "extend, do
 
 ### 3. Validate at the boundary and fail fast: partly aligned
 
+*Update: resolved by the work recorded in the addendum at the end of this file.*
+
 **In line**
 - FluentValidation validators exist for authentication (`Application/Validations/Authentication/`: create user, login, change password) and SEO (`Validations/Seo/`: five validators plus a shared rules helper). These services use them through `IValidationService`.
 - Startup options validation (`ValidateOnStart`) covers `CommerceOptions` and `ClientAppOptions` (`Application/DependencyInjection.cs:42-59`), `DemoOptions`, `CheckoutIdempotencyOptions` and `EmailSettings` (`Infrastructure/DependencyInjection.cs:44-55,174-190`), `ApiRuntimeOptions` (`API/Program.cs:64-98`) and the Storefront URL options (`Storefront/Program.cs:28-36`).
@@ -178,3 +180,72 @@ Measured against the fork commit `3944038`: about 75 upstream-owned files differ
 4. Move file handling out of `FileUploadController`, and decide whether `AdminSettings.DefaultCurrency` should exist.
 5. Move money formatting rules into a layer the server can use, so emails and Razor share them.
 6. Move the sample catalog out of `DevelopmentCatalogSeeder` into `NutsnBerriesSeeder`.
+
+---
+
+## Addendum: first priority item implemented (input validation and startup validation)
+
+**Item 1 of the "Suggested priority" list above:** *add validation for product, category, variant and newsletter input, and validate the remaining options and the JWT key at startup.* This addendum records what was changed, why it was done this way, and how it was verified. The findings above are kept unchanged as the record of the review.
+
+### What was wrong (from principle 3 and the related security findings)
+
+- Product, category, variant and newsletter requests had no real server-side validation. `[Required]` on `decimal`, `int` and `Guid` did nothing, so negative prices passed, and nothing limited text length.
+- The newsletter endpoint accepted any non-empty text, including HTML, on an anonymous endpoint that sends email.
+- `StripeOptions`, `BankTransferSettings`, `RecommendationOptions` and the Storefront's `DemoOptions` were bound without validation.
+- The JWT key was never checked, so a missing secret fell back to the committed placeholder text as the signing key.
+
+### Design: new files only, two one-line hooks
+
+To follow the "extend, do not edit" policy, no upstream controller or service was edited. Request validation and startup validation are both added from outside:
+
+| Piece | Where | Role |
+|---|---|---|
+| `ProductBaseValidator`, `CreateProductValidator`, `UpdateProductValidator` | `BlazorShop.Application/Validations/Catalog/ProductValidators.cs` | Product rules |
+| `CategoryBaseValidator`, `CreateCategoryValidator`, `UpdateCategoryValidator` | `.../Catalog/CategoryValidators.cs` | Category rules |
+| `CreateProductVariantValidator`, `UpdateProductVariantValidator` | `.../Catalog/ProductVariantValidators.cs` | Variant rules |
+| `CatalogConstraints` | `BlazorShop.Domain/Constants/CatalogConstraints.cs` | The limits, in one place |
+| `SubscribeEmailDtoValidator` | `BlazorShop.API/Hardening/` | Newsletter address rule |
+| `FluentValidationActionFilter` | `BlazorShop.API/Hardening/` | One global MVC filter: for each request body it runs the validator registered for that exact type and, on failure, returns HTTP 400 with the same `ServiceResponse` shape the services already use, so the Web client shows it like any other failed operation |
+| `JwtKeyOptions` + `JwtKeyOptionsValidator`, `StripeOptionsValidator`, `BankTransferSettingsValidator`, `RecommendationOptionsValidator` | `BlazorShop.API/Hardening/StartupOptionValidators.cs` | Startup validation of configuration |
+| `StorefrontDemoOptionsValidator` | `BlazorShop.Storefront/Hardening/` | The Storefront's copy of the demo options |
+| `AddNutsnBerriesHardening` and `AddNutsnBerriesStorefrontOptionValidation` | `NutsnBerriesHardeningExtensions.cs`, `StorefrontOptionValidation.cs` | One registration method per host |
+
+The Application validators are picked up automatically by upstream's existing `AddValidatorsFromAssemblyContaining` call. **The only edits to upstream files are one added line in `BlazorShop.API/Program.cs` and one in `BlazorShop.Storefront/Program.cs`**, each calling its registration method. ASP.NET's built-in DataAnnotations check keeps running first and is unchanged.
+
+### The rules
+
+| Input | Rules |
+|---|---|
+| **Product** (create and update) | Name required, at most 200 characters; description required, at most 5,000; price greater than 0 and at most 10,000,000; quantity 0 to 1,000,000; image required, at most 2,048 characters, and an `http(s)` URL or a root-relative path (so `javascript:`, `//host` and `ftp:` are rejected); category required; id required on update |
+| **Category** | Name required, at most 100 characters; id required on update |
+| **Variant** | SKU at most 64; size scale must be a defined value; size value required, at most 16; price, when given, greater than 0 and at most the product maximum; stock 0 to 1,000,000; color at most 32; ids required on update. On create the product id is **not** required in the body, because the route supplies it |
+| **Newsletter** | Required, at most 254 characters, and a plain mailbox: letters (including accented), digits and `._%+-`, an `@`, and a domain with a dot. Quotes, angle brackets, spaces, line breaks and `Name <address>` forms are rejected |
+| **JWT** | `Jwt:Key` must exist, must not be a `<placeholder>`, and must be at least 32 bytes; issuer and audience are required |
+| **Stripe** | Nothing checked while `Stripe:Enabled` is false. When true: secret key present and starting `sk_` or `rk_`, webhook secret present and starting `whsec_`, neither a placeholder |
+| **Bank transfer** | An entirely empty section is allowed. Otherwise beneficiary, bank name and IBAN are all required, with no placeholders, and the IBAN must have the right shape. The IBAN checksum is deliberately **not** enforced because the sample IBAN in the repository would fail it |
+| **Recommendations** | Maximum 1 to 50, cache 1 to 168 hours, sliding expiration 1 to 1,440 minutes, minimum order count not negative |
+| **Storefront demo options** | Cookie and header names required; lifetime 5 to 120 minutes; sessions 1 to 100 (the same bounds the API already enforces) |
+
+### Behavior changes to be aware of
+
+- An admin can no longer save a product with price 0 or a description over 5,000 characters. Existing data over a limit is still readable, but re-saving it needs shortening first.
+- The API will not start without a real `Jwt:Key`. Your machine already has one in user-secrets, and the E2E fixture supplies a 64-character key, so nothing existing breaks.
+- Startup validation runs when the host starts, which is **after** database migrations in upstream's `Program.cs`. A bad key therefore still fails fast, but migrations have already run by then.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| New unit tests (`BlazorShop.Tests/Hardening`): validators, the filter, each options validator, and the registration (a bad configuration makes `IStartupValidator` throw) | **90 new tests, all pass** |
+| Whole suite | **789 passed, 0 failed, 10 skipped** (was 699) |
+| Whole-solution build with `-warnaserror` | 0 warnings, 0 errors |
+| **Live: API started with the placeholder `Jwt__Key`** | **Refuses to start**: "Jwt:Key is missing or still the placeholder value. Set it with `dotnet user-secrets set ...`" |
+| Live: API started with the real secret | Starts and reports healthy |
+| Live: anonymous newsletter endpoint, 4 bad inputs (`not-an-email`, an HTML address, empty, 300 characters) | Each returns **400** with `{"success":false,"message":"...","payload":{"Email":[...]}}` |
+| Live: a valid address | **200**, "Subscribed successfully." (I removed that test row from your database afterwards; the table is back to 0 rows) |
+
+**Not verified live:** the admin product, category and variant endpoints, because they need an admin sign-in and I do not handle your password; they go through the same registered filter that the newsletter requests just proved, and the validators and the filter are covered by unit tests. The Stripe and bank-transfer rules are covered by unit tests only. The GitHub CI result is recorded separately once the change is pushed.
+
+### What remains from the priority list
+
+Only item 1 is done. Items 2 to 6 (remove dead code, an authorization-attribute test, move file handling out of `FileUploadController`, shared money formatting, and moving the sample catalog into `NutsnBerriesSeeder`) are untouched. Principle 3 in `CLAUDE.md` is now accurate as written.

@@ -271,3 +271,19 @@ The advisory's own remediation text is to "install the latest version of .NET" a
 **Cost and rollback:** this edits three upstream files (5 lines), so the modified-file count is now **78** (966 of 1,059 files identical, 91.2%). Upstream will probably bump these tags itself, so expect a trivial merge conflict later. Rollback: restore the three Dockerfiles and the runbook lines.
 
 **Result on GitHub** (commit `fcec08b`, 2026-11-01): **both workflows are green.** `Code Analysis` succeeded. In `ci`, `build-test` succeeded, including the unit tests, both npm audits and the three container image builds (API, Storefront, Web) with the new `sdk:10.0.403` and `aspnet:10.0.14` bases; `browser-e2e` succeeded with the Playwright suite passing in both consecutive runs; and `postgres16-archive` succeeded. So the image bump did not break any build or test. What this does not show is the Pkcs version inside the built images (see "Still unproven" above).
+
+---
+
+## G. Status update: findings closed by the validation work
+
+The first priority item of `Prompt 1.md` (input validation and startup validation, see the addendum there) closes or reduces these findings from this review. The original tables above stay unchanged as the record.
+
+| ID | Finding | Status |
+|---|---|---|
+| **D1** (High) | JWT signing key silently falls back to a public placeholder | **Closed.** `JwtKeyOptionsValidator` makes startup fail if the key is missing, a `<placeholder>`, or shorter than 32 bytes. Confirmed live: the API refuses to start with the placeholder. |
+| V1 | No validation on product, category and variant input | **Closed.** New validators run through one global filter; limits are in `CatalogConstraints`. |
+| V2 (Medium) | Newsletter endpoint accepts any text | **Reduced.** The address is now required, bounded and checked (confirmed live: 4 bad inputs return 400). Still open: no double opt-in, the duplicate check still loads every subscriber, and the endpoint still sends mail to whatever valid address it receives (rate-limited). |
+| V7 | Permissive email check | **Closed for the newsletter** (HTML and quoted forms are rejected). The registration validator is upstream code and is unchanged. |
+| V8 | Stripe, bank transfer, recommendation and Storefront demo options unvalidated | **Closed.** Each has a startup validator. |
+
+**New totals for sections A to E:** 4 of the 32 findings are closed (D1, V1, V7, V8), leaving 28: 0 High, 6 Medium (S1, V3, I4, L1, D2, D3), 16 Low (counting V2 at its reduced severity) and 6 Informational.

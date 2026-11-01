@@ -21,6 +21,7 @@ BlazorShop.Web.Shared.Helper.PriceFormatter.Configure(builder.Configuration["Com
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.Configure<DemoOptions>(builder.Configuration.GetSection(DemoOptions.SectionName));
+builder.Services.AddNutsnBerriesStorefrontOptionValidation();
 builder.Services.AddTransient<StorefrontDemoSessionHandler>();
 builder.Services.AddSingleton<IValidateOptions<StorefrontApiOptions>, StorefrontApiOptionsValidator>();
 builder.Services.AddSingleton<IValidateOptions<ClientAppOptions>, StorefrontClientAppOptionsValidator>();
