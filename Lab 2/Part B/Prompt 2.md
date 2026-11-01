@@ -209,7 +209,7 @@ Practical risk: **low**. These are build-time tools (Tailwind compiling CSS) and
 | Option B in the scratch copy | Also clean (vulnerability list, build, 699 tests) |
 | npm after `npm audit fix`: full audit (what CI runs) | **0 vulnerabilities**; runtime-only audit 0; generated `site.css` byte-identical to the committed file |
 
-**Not verified:** the GitHub run itself (see F9), the Playwright browser tests (they need Docker and a browser), Option C, and any container image (see F8).
+**Not verified locally:** the GitHub run, the Playwright browser tests and the Docker image builds (all three now confirmed green on GitHub, see F9), Option C, and which Pkcs version a container image actually ships (see F8).
 
 ### F8. Correction found while applying the fix: where Pkcs really comes from at runtime
 
@@ -223,4 +223,15 @@ What follows for production:
 
 ### F9. Result on GitHub
 
-*To be filled in after the first CI run on the fix commit.*
+Fix commit `274564d`, pushed 2026-11-01. **Both workflows are green**, the first green `Code Analysis` run since 2026-10-10 and the first green `ci` run since the same day.
+
+| Workflow / job | Before (`354acc4`) | After (`274564d`) |
+|---|---|---|
+| `Code Analysis` / analyze | failure (NU1902/NU1903) | **success** |
+| `ci` / build-test (npm audits, restore, build, unit tests, three Docker image builds) | failure (npm full-tree audit) | **success** |
+| `ci` / browser-e2e (E2E build, Playwright suite run twice, scenario verification, upload) | failure (NU1902/NU1903) | **success** |
+| `ci` / postgres16-archive | success | success |
+
+This also settles two items listed as not verified in F7: the Playwright browser tests pass (two consecutive runs), and the three container images (API, Storefront, Web) build with the props files present.
+
+**Still open (decision for you):** the container build passing does not show *which* Pkcs version ends up inside the API image. As explained in F8, the runtime image tag (`aspnet:10.0.6`) is the real production exposure, and Option E (move the image tags to a 10.0.13 or later patch) has not been applied.
