@@ -28,8 +28,7 @@ namespace BlazorShop.Application.Services.Payment
         private readonly IPaymentTransactionStore _paymentTransactionStore;
         private readonly IStripePaymentStateTransitionService _stripePaymentStateTransitionService;
         private readonly IOrderRepository _orderRepository;
-        private readonly IEmailService _emailService;
-        private readonly BankTransferSettings _bankTransferSettings;
+        private readonly BankTransferNotifier _bankTransferNotifier;
         private readonly ClientAppOptions _clientAppOptions;
         private readonly CheckoutIdempotencyOptions _idempotencyOptions;
         private readonly CommerceOptions _commerceOptions;
@@ -61,8 +60,7 @@ namespace BlazorShop.Application.Services.Payment
             _paymentTransactionStore = paymentTransactionStore;
             _stripePaymentStateTransitionService = stripePaymentStateTransitionService;
             _orderRepository = orderRepository;
-            _emailService = emailService;
-            _bankTransferSettings = bankTransferOptions.Value;
+            _bankTransferNotifier = new BankTransferNotifier(emailService, bankTransferOptions, logger);
             _clientAppOptions = clientAppOptions.Value;
             _idempotencyOptions = idempotencyOptions.Value;
             _commerceOptions = commerceOptions.Value;
@@ -203,7 +201,7 @@ namespace BlazorShop.Application.Services.Payment
                     CheckoutStatus.PendingPayment,
                     CheckoutPaymentKind.BankTransfer,
                     "Order placed. Complete the bank transfer using the supplied instructions.",
-                    bankTransfer: BuildBankTransferInfo(order)),
+                    bankTransfer: _bankTransferNotifier.BuildInfo(order)),
                 _ => null,
             };
 
@@ -270,7 +268,7 @@ namespace BlazorShop.Application.Services.Payment
                         CheckoutStatus.PendingPayment,
                         paymentKind,
                         "Order placed. Complete the bank transfer using the supplied instructions.",
-                        bankTransfer: BuildBankTransferInfo(order)));
+                        bankTransfer: _bankTransferNotifier.BuildInfo(order)));
             return await CompleteLocalPaymentAsync(
                 paymentKind,
                 customer,
@@ -300,7 +298,7 @@ namespace BlazorShop.Application.Services.Payment
             if (paymentKind == CheckoutPaymentKind.BankTransfer
                 && outcome.Response.Payload?.BankTransfer is not null)
             {
-                await TrySendBankTransferEmailAsync(customer, outcome.Response.Payload.BankTransfer);
+                await _bankTransferNotifier.TrySendEmailAsync(customer, outcome.Response.Payload.BankTransfer);
             }
 
             return FromPersistedOutcome(outcome);
@@ -995,50 +993,6 @@ namespace BlazorShop.Application.Services.Payment
 
         private string BuildClientUrl(string path) =>
             $"{_clientAppOptions.BaseUrl.TrimEnd('/')}/{path.TrimStart('/')}";
-
-        private BankTransferInfo BuildBankTransferInfo(Order order) => new()
-        {
-            Iban = string.IsNullOrWhiteSpace(_bankTransferSettings.Iban)
-                ? "BG00UNCR70001512345678"
-                : _bankTransferSettings.Iban,
-            Beneficiary = _bankTransferSettings.Beneficiary,
-            BankName = _bankTransferSettings.BankName,
-            Reference = order.Reference,
-            Amount = order.TotalAmount,
-            Currency = order.Currency,
-            AdditionalInfo = _bankTransferSettings.AdditionalInfo,
-        };
-
-        private async Task TrySendBankTransferEmailAsync(AppUser customer, BankTransferInfo info)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(customer.Email))
-                {
-                    return;
-                }
-
-                var html = $@"<p>Thank you for your order.</p>
-<p>Please make a bank transfer to the following account:</p>
-<ul>
-<li>Bank: <b>{info.BankName}</b></li>
-<li>Beneficiary: <b>{info.Beneficiary}</b></li>
-<li>IBAN: <b>{info.Iban}</b></li>
-<li>Amount: <b>{info.Amount:F2} {info.Currency}</b></li>
-<li>Reference: <b>{info.Reference}</b></li>
-</ul>
-<p>{info.AdditionalInfo}</p>
-<p>Your order will be processed once we receive the payment.</p>";
-                await _emailService.SendEmailAsync(customer.Email, "Bank Transfer Instructions", html);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Order {OrderReference} was created, but its bank-transfer email could not be sent.",
-                    info.Reference);
-            }
-        }
 
         private async Task<CheckoutExecutionResult> ReplayPersistedOutcomeAsync(
             PersistedCheckoutOutcome outcome,
