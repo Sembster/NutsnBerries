@@ -188,6 +188,7 @@ namespace BlazorShop.API
                     using var scope = app.Services.CreateScope();
                     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     DevelopmentCatalogSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
+                    NutsnBerriesSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
                 }
 
                 if (seedSampleCatalogOnly)

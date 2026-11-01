@@ -1,6 +1,6 @@
 # Implementation summary: Lab 2, Part A
 
-**Project:** NutsnBerries, a natural beauty webshop forked from [unrealbg/BlazorShop](https://github.com/unrealbg/BlazorShop) (Blazor, .NET 10, PostgreSQL in Docker). The shop was built in Lab 1. This part starts from one question: *is any of the project custom code that does not depend on upstream?* It ends with a rule for how future customizations are made, and applies that rule to the first customization (the theme CSS).
+**Project:** NutsnBerries, a natural beauty webshop forked from [unrealbg/BlazorShop](https://github.com/unrealbg/BlazorShop) (Blazor, .NET 10, PostgreSQL in Docker). The shop was built in Lab 1. This part starts from one question: *is any of the project custom code that does not depend on upstream?* It ends with a rule for how future customizations are made, and applies that rule to the first two customizations (the theme CSS and the SEO-settings seed).
 
 ## 1. What we analyzed
 
@@ -42,9 +42,23 @@
 - **Diff against upstream:** `storefront.css` went from 47 added and 11 changed lines to 0. The only remaining upstream edit for the theme is 1 added line in `App.razor`.
 - **The modified-file count did not drop** (still 73): `storefront.css` is now identical, but `App.razor` joined the list. The win is the size and location of the diff: a single line instead of 58 changed lines in a file upstream actively maintains.
 
+### SEO settings seeded from our own seeder
+
+| | |
+|---|---|
+| **Problem** | During the CSS check, page titles lost the "\| NutsnBerries" suffix. The `SeoSettings` table was empty, so once the API was warm it returned empty settings. The suffix only appeared when the API call failed and the Storefront used its config fallback. |
+| **Extension, not edit** | A new class, `NutsnBerriesSeeder` (`BlazorShop.Infrastructure/Data/NutsnBerriesSeeder.cs`), instead of adding to upstream's `DevelopmentCatalogSeeder`. It is called from one added line in the API's `Program.cs`, next to the upstream seeder call. |
+| **Behavior** | Creates the single SEO row only if none exists (site name, title suffix, a default meta description, company name). It never overwrites an existing row, so edits made in the admin area survive restarts. It runs only in Development, like the upstream seeder. |
+| **Why those values** | Only fields we actually know: the brand name and a short description of the shop. Email, phone, address, logo and social URLs are left empty rather than invented. The base canonical URL is also left empty on purpose: the Storefront then builds canonical links from its own `PublicUrl:BaseUrl` setting (checked: `http://localhost:18598/...` locally), which is the right place to set the real domain later. |
+| **Tests** | `NutsnBerriesSeederTests` (4 tests): creates the row when none exists, stays within the SEO field length limits, is idempotent, and does not overwrite an admin-edited row. In total 699 tests pass, 0 fail. |
+| **Verified live** | After restarting the API, the database held the row, `/api/seo/settings` returned it, and every page title I checked ended with "\| NutsnBerries" (home, new releases, about, a category and a product page). |
+| **One thing to remember** | The Storefront caches SEO settings for 5 minutes, so a change in the database or admin area can take that long (or a restart) to show up in titles. |
+
 ## 4. Decisions and what was not done
 
 - **The other modified files are not being refactored yet.** When the separate repo is created they get sorted into "can become an extension", "should go upstream" and "must stay a patch". The CSS split was done as a trial of the approach, because it was the cheapest and safest candidate. Doing everything now would add churn without a merge to benefit.
-- **Not implemented yet:** the baseline tag, the guard tests for hardcoded currency symbols and brand text (the new theme tests are a different, narrower guard), and the dry-run merge. Next extension candidate: our own seeder class instead of editing upstream's `DevelopmentCatalogSeeder`.
+- **Not implemented yet:** the baseline tag, the guard tests for hardcoded currency symbols and brand text (the theme tests are a different, narrower guard), and the dry-run merge.
+- **Next extension candidate:** move the sample catalog (categories, products, images) out of upstream's `DevelopmentCatalogSeeder` and into `NutsnBerriesSeeder`, then restore upstream's file. That removes our largest remaining edit to a seeder.
 - **No upstream changes were fetched or merged.** The only network access was a read-only listing of upstream's latest commit.
-- **Found along the way, not fixed:** the `SeoSettings` table is empty, so once the API is warm the Storefront's page titles have no "| NutsnBerries" suffix. The suffix only appears when the API call fails and the config fallback is used. Saving the SEO settings in the admin area, or seeding a row from our own seeder, would fix it.
+- **Found along the way and fixed:** the empty `SeoSettings` table that removed the site name from page titles, now seeded by `NutsnBerriesSeeder` (see above).
+- **Where the numbers stand now:** 970 of 1,059 upstream files identical (91.6%), 74 modified, 15 deleted, 25 new. The new files are the theme stylesheet, `PriceFormatter`, `NutsnBerriesSeeder`, their tests, images, compose, config and docs. The only upstream hooks we added are one line in `App.razor` and one line in `Program.cs`.

@@ -86,17 +86,17 @@ These describe how the code is structured today and the rules to follow when cha
 
 NutsnBerries is a fork of upstream BlazorShop, and the plan is to move it into a separate repo later where upstream updates can be merged with little manual work. We are skipping upstream merges for now. To keep that future merge cheap, **customizations should be extensions on the base code, not modifications of upstream files.**
 
-At the fork point upstream had 1,059 files. Today 971 are identical to upstream, 73 are modified, 15 were deleted (the old fashion product images) and 23 are new. Every modified file is a possible merge conflict, so the goal is to stop that number growing and to shrink it over time.
+At the fork point upstream had 1,059 files. Today 970 are identical to upstream, 74 are modified, 15 were deleted (the old fashion product images) and 25 are new. Every modified file is a possible merge conflict, so the goal is to stop that number growing and to shrink it over time.
 
 When making a change:
 
-1. **Prefer new files over edits.** Put our own code in new, clearly named files or projects (as with `PriceFormatter.cs` and the theme stylesheet `nutsnberries-theme.css`) instead of editing upstream's files. Our own seeder class instead of editing `DevelopmentCatalogSeeder` is the next candidate.
+1. **Prefer new files over edits.** Put our own code in new, clearly named files or projects (as with `PriceFormatter.cs`, the theme stylesheet `nutsnberries-theme.css` and `NutsnBerriesSeeder.cs`) instead of editing upstream's files. Moving the sample catalog out of `DevelopmentCatalogSeeder` and into `NutsnBerriesSeeder` is the next candidate.
 2. **Use configuration before code.** If a setting already exists (such as `StorefrontSeo:SiteName` or `Commerce:Currency`), change the setting rather than the code that reads it.
 3. **If an upstream file must change, keep the edit minimal.** A one-line hook that calls into our own code is better than rewriting the file. Keep the diff small and localized.
 4. **Prefer changes upstream could accept.** Generic improvements (for example making currency or the brand name configurable) are good candidates to offer upstream as pull requests. Once merged upstream they stop being our private diff.
 5. **Know the limits.** Upstream hardcodes some things in Razor pages (prices, brand text, hero copy), and a page cannot be extended from outside, so those stay as small modifications.
 
-The theme CSS has already been split out as the first extension. The other existing modifications are not being refactored yet. When the separate repo is created, sort the remaining modified files into "can become an extension", "should go upstream" and "must stay a patch".
+The theme CSS and the SEO-settings seed have already been built as extensions. The other existing modifications are not being refactored yet. When the separate repo is created, sort the remaining modified files into "can become an extension", "should go upstream" and "must stay a patch".
 
 ## Running locally
 
@@ -141,6 +141,6 @@ The Web project runs `npm ci` and the Tailwind build as part of `dotnet build`. 
 - **Local-only Web config.** `BlazorShop.Web/wwwroot/appsettings.Local.json` is gitignored. Launch the Web client with `-p:WasmApplicationEnvironmentName=Local` to use it.
 - **NuGet.** `nuget.config` restricts restore to nuget.org. The machine's global config includes a private Azure feed that hangs non-interactive restores.
 - **After a .NET SDK update**, run `dotnet restore` on the Web project before `--no-restore` builds, or the WASM runtime pack is missing (NETSDK1112).
-- **Seed data.** `DevelopmentCatalogSeeder` upserts 6 categories and 15 sample products by fixed GUIDs on API startup in Development. Product images are placeholder SVGs in `BlazorShop.Web/wwwroot/images/products`.
+- **Seed data.** `DevelopmentCatalogSeeder` upserts 6 categories and 15 sample products by fixed GUIDs on API startup in Development. Product images are placeholder SVGs in `BlazorShop.Web/wwwroot/images/products`. `NutsnBerriesSeeder` (our own class, called from one line next to it in the API's `Program.cs`) creates the single SEO settings row if none exists, so page titles get the "| NutsnBerries" suffix; it never overwrites a row edited in the admin area. The Storefront caches SEO settings for 5 minutes.
 - **Tests pin visual details.** Upstream's tests assert header text and read upstream's `storefront.css` (for example, no `linear-gradient(135deg`); that file is intentionally unmodified. Our own `NutsnBerriesThemeTests` guard the theme file and its link order in `App.razor`. Run the unit tests after styling changes.
 - **Git.** Commit messages end with the Co-Authored-By line. Push to `origin` (Sembster/NutsnBerries); never push to `upstream`.
