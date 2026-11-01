@@ -24,5 +24,6 @@ The API applies EF Core migrations on startup. Run the Storefront and Web projec
 or use the upstream Aspire AppHost (`dotnet run --project BlazorShop.AppHost`).
 
 ## Theme
-Storefront colours live at the bottom of `BlazorShop.Storefront/wwwroot/css/storefront.css`
-(forest `#1e3428`, sage `#8aa68a`, cream `#fbf8f1`, berry `#b83b5e`).
+The Storefront theme lives in its own stylesheet, `BlazorShop.Storefront/wwwroot/css/nutsnberries-theme.css`,
+which `App.razor` links after upstream's `storefront.css` (forest `#1e3428`, sage `#8aa68a`, cream `#fbf8f1`,
+berry `#b83b5e`). Upstream's `storefront.css` is left untouched; change colours in the theme file.

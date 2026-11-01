@@ -1,0 +1,87 @@
+/*
+ * NutsnBerries theme: forest, sage, cream and berry.
+ *
+ * Loaded after storefront.css (see App.razor). Every rule here overrides an upstream rule of equal or
+ * lower specificity, so upstream's storefront.css can stay untouched and merge cleanly.
+ */
+
+:root {
+    --nb-forest: #1e3428;
+    --nb-sage: #8aa68a;
+    --nb-cream: #fbf8f1;
+    --nb-berry: #b83b5e;
+    --nb-berry-dark: #962f4b;
+    --nb-bark: #6b4f3a;
+}
+
+/* --- Page surface and text ------------------------------------------------------------------ */
+
+.bs-storefront-shell {
+    --bs-storefront-surface-background:
+        linear-gradient(180deg, #fbf8f1 0%, #eef2e6 52%, #f8f5ec 100%);
+    color: #24332a;
+}
+
+/* --- Header ---------------------------------------------------------------------------------- */
+
+.bs-storefront-header__shell::before {
+    background: rgba(30, 52, 40, 0.98);
+    border-bottom-color: rgba(138, 166, 138, 0.35);
+}
+
+.bs-storefront-header__mobile-panel {
+    background: rgba(30, 52, 40, 0.98);
+}
+
+.bs-storefront-header__brand-mark {
+    font-family: Georgia, "Times New Roman", serif;
+    letter-spacing: 0.18em;
+}
+
+.bs-storefront-header__brand-label {
+    color: #b9cdb4;
+}
+
+/* --- Accent (berry) -------------------------------------------------------------------------- */
+
+.bs-storefront-deal-button {
+    border-color: rgba(184, 59, 94, 0.86);
+    background: #b83b5e;
+}
+
+.bs-storefront-deal-button:hover {
+    background: #962f4b;
+}
+
+.bs-storefront-cart-badge {
+    background: #b83b5e;
+}
+
+/* --- Account menu ---------------------------------------------------------------------------- */
+
+.bs-storefront-account-menu__panel {
+    background: rgba(30, 52, 40, 0.98);
+}
+
+.bs-storefront-account-menu__meta {
+    color: #b9cdb4;
+}
+
+/* --- Utility classes baked into site.css (Tailwind), re-themed on the storefront only -------- */
+
+.bs-storefront-shell .bg-neutral-900 { background-color: var(--nb-forest); }
+.bs-storefront-shell .hover\:bg-neutral-800:hover { background-color: #2c4a39; }
+.bs-storefront-shell .bg-amber-500 { background-color: var(--nb-berry); }
+.bs-storefront-shell .hover\:bg-amber-600:hover { background-color: var(--nb-berry-dark); }
+.bs-storefront-shell .text-neutral-900 { color: var(--nb-forest); }
+.bs-storefront-shell .bg-white\/80,
+.bs-storefront-shell .bg-white\/70 { background-color: rgba(251, 248, 241, 0.8); }
+
+/* --- Hero: soft botanical gradient instead of the upstream hotlinked stock photo ------------- */
+
+.bs-storefront-shell .hero-bg {
+    background:
+        radial-gradient(circle at 18% 22%, rgba(184, 59, 94, 0.18) 0, transparent 38%),
+        radial-gradient(circle at 82% 70%, rgba(138, 166, 138, 0.42) 0, transparent 45%),
+        linear-gradient(160deg, #eef2e6 0%, #fbf8f1 55%, #f3e6df 100%);
+}

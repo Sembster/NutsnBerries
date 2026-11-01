@@ -38,7 +38,7 @@ Namespaces and project names deliberately stay `BlazorShop.*` so upstream change
 |---|---|
 | Language / runtime | C# on .NET 10 (SDK 10.0.x, see `global.json`) |
 | UI | Blazor: Blazor Web App (Storefront, server-rendered) and Blazor WebAssembly (Web client) |
-| Styling | Tailwind CSS 3.4 (built by npm, needs Node 22+/24) plus hand-written `storefront.css` |
+| Styling | Tailwind CSS 3.4 (built by npm, needs Node 22+/24) plus upstream's `storefront.css` and our own `nutsnberries-theme.css` |
 | API | ASP.NET Core Web API, Swagger/OpenAPI |
 | Data access | Entity Framework Core 10 with `Npgsql.EntityFrameworkCore.PostgreSQL` |
 | Database | PostgreSQL 16, run in Docker |
@@ -60,7 +60,7 @@ These choices come from the requirements for the lab and from constraints found 
 - **PostgreSQL instead of MySQL.** The original plan was MySQL in Docker. BlazorShop is built and tested against PostgreSQL (EF Core migrations, Npgsql, Testcontainers tests), and the usual MySQL provider, Pomelo, had no stable EF Core 10 release (latest stable was 9.0.0). Oracle's `MySql.EntityFrameworkCore` 10.x existed, but porting meant regenerating migrations and re-verifying queries. The decision was to keep PostgreSQL, which still satisfies the "database in a Docker container" requirement.
 - **Docker for the database.** `compose.dev.yml` runs Postgres with a named volume and localhost-only port, so the lab needs no local database install and data survives restarts. Password lives in a gitignored `.env`.
 - **Server-rendered Storefront plus WASM client.** This is upstream's architecture: the public shop is server-rendered so product and category pages are crawlable and fast; sign-in, account and admin run as an interactive WASM app.
-- **Trimmed rebrand, not a rewrite.** Namespaces stay `BlazorShop.*` to keep merges with upstream cheap; the nature theme is layered on top in `storefront.css`.
+- **Trimmed rebrand, not a rewrite.** Namespaces stay `BlazorShop.*` to keep merges with upstream cheap; the nature theme is layered on top in its own `nutsnberries-theme.css`, linked after upstream's `storefront.css`, which stays untouched.
 - **SEK via a central `PriceFormatter`.** Upstream only supported EUR/GBP/USD and hardcoded currency symbols. SEK was added to `CurrencyMoney`, and all display goes through `PriceFormatter` (configured from `Commerce:Currency`) so the symbol and number format live in one place.
 - **Plain-HTTP local setup.** The ASP.NET dev HTTPS certificate is not trusted on this machine, and trusting it is a security-store change for the user to make. Local runs therefore use HTTP with environment-variable overrides.
 
@@ -90,13 +90,13 @@ At the fork point upstream had 1,059 files. Today 971 are identical to upstream,
 
 When making a change:
 
-1. **Prefer new files over edits.** Put our own code in new, clearly named files or projects (as with `PriceFormatter.cs`), for example a separate CSS file for the theme or our own seeder class, instead of editing upstream's `storefront.css` or `DevelopmentCatalogSeeder`.
+1. **Prefer new files over edits.** Put our own code in new, clearly named files or projects (as with `PriceFormatter.cs` and the theme stylesheet `nutsnberries-theme.css`) instead of editing upstream's files. Our own seeder class instead of editing `DevelopmentCatalogSeeder` is the next candidate.
 2. **Use configuration before code.** If a setting already exists (such as `StorefrontSeo:SiteName` or `Commerce:Currency`), change the setting rather than the code that reads it.
 3. **If an upstream file must change, keep the edit minimal.** A one-line hook that calls into our own code is better than rewriting the file. Keep the diff small and localized.
 4. **Prefer changes upstream could accept.** Generic improvements (for example making currency or the brand name configurable) are good candidates to offer upstream as pull requests. Once merged upstream they stop being our private diff.
 5. **Know the limits.** Upstream hardcodes some things in Razor pages (prices, brand text, hero copy), and a page cannot be extended from outside, so those stay as small modifications.
 
-Existing modifications are not being refactored yet. When the separate repo is created, sort the modified files into "can become an extension", "should go upstream" and "must stay a patch".
+The theme CSS has already been split out as the first extension. The other existing modifications are not being refactored yet. When the separate repo is created, sort the remaining modified files into "can become an extension", "should go upstream" and "must stay a patch".
 
 ## Running locally
 
@@ -142,5 +142,5 @@ The Web project runs `npm ci` and the Tailwind build as part of `dotnet build`. 
 - **NuGet.** `nuget.config` restricts restore to nuget.org. The machine's global config includes a private Azure feed that hangs non-interactive restores.
 - **After a .NET SDK update**, run `dotnet restore` on the Web project before `--no-restore` builds, or the WASM runtime pack is missing (NETSDK1112).
 - **Seed data.** `DevelopmentCatalogSeeder` upserts 6 categories and 15 sample products by fixed GUIDs on API startup in Development. Product images are placeholder SVGs in `BlazorShop.Web/wwwroot/images/products`.
-- **Tests pin visual details.** Some tests assert header text, a header colour and CSS patterns (for example, no `linear-gradient(135deg`). Run the unit tests after styling changes.
+- **Tests pin visual details.** Upstream's tests assert header text and read upstream's `storefront.css` (for example, no `linear-gradient(135deg`); that file is intentionally unmodified. Our own `NutsnBerriesThemeTests` guard the theme file and its link order in `App.razor`. Run the unit tests after styling changes.
 - **Git.** Commit messages end with the Co-Authored-By line. Push to `origin` (Sembster/NutsnBerries); never push to `upstream`.
