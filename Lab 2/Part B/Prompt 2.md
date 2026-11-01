@@ -8,7 +8,7 @@
 
 ### Summary
 
-I found **32 items**: 1 High, 7 Medium, 18 Low and 6 Informational. The code is stronger than its defaults: SQL is parameterized everywhere, uploads are carefully handled, JWT validation is strict, and there are no real secrets in the repository or its git history. The weak spots are a handful of insecure defaults, a few unvalidated admin and anonymous inputs, and logging that is more verbose than the configuration suggests.
+I found **32 items**: 1 High, 7 Medium, 18 Low and 6 Informational. The code is stronger than its defaults: SQL is parameterized everywhere, uploads are carefully handled, JWT validation is strict, and there are no real secrets in the repository or its git history. The weak spots are a handful of insecure defaults, a few unvalidated admin and anonymous inputs, and logging that is more verbose than the configuration suggests. **Addendum F (added afterwards) covers the failing GitHub CI:** three vulnerable NuGet advisories (1 High, 2 Medium) in two packages, plus a separate npm audit failure, with a fix that was tested in a scratch copy first and then applied (two new props files and an npm lockfile update).
 
 | Severity | Count | Items |
 |---|---|---|
@@ -24,7 +24,7 @@ I found **32 items**: 1 High, 7 Medium, 18 Low and 6 Informational. The code is 
 4. **V3 and I4:** an admin-entered tracking URL is not validated and ends up in links and emails; the Web client renders toast messages as raw HTML.
 5. **D2 and D3:** containers run as root and the public Storefront sends no security headers.
 
-**Scope and limits.** This is a static review of the source at commit `49bcb54`, using targeted searches and reading the relevant code. Paths are relative to `Lab1/NutsnBerries`, with line numbers as of that commit. I rated severity as if the app were deployed publicly as-is. For a course lab, most items are not blockers. I did **not** cover: NuGet dependency vulnerabilities (only `npm audit`, which found 0, was run earlier), dynamic testing against a running instance, a line-by-line read of the shell and PowerShell scripts (I scanned them for dangerous patterns), nginx TLS configuration, or authorization of individual orders (object-level access).
+**Scope and limits.** This is a static review of the source at commit `49bcb54`, using targeted searches and reading the relevant code. Paths are relative to `Lab1/NutsnBerries`, with line numbers as of that commit. I rated severity as if the app were deployed publicly as-is. For a course lab, most items are not blockers. I did **not** cover in sections A-E: dependency vulnerabilities (the CI failure is analysed separately in addendum F; the runtime-only `npm audit` run earlier found 0, but the full dev-tree audit that CI runs finds 6), dynamic testing against a running instance, a line-by-line read of the shell and PowerShell scripts (I scanned them for dangerous patterns), nginx TLS configuration, or authorization of individual orders (object-level access).
 
 ---
 
@@ -118,3 +118,109 @@ I found **32 items**: 1 High, 7 Medium, 18 Low and 6 Informational. The code is 
 4. Validate tracking URLs as `http(s)` and HTML-encode email bodies (V3, I5); encode toast messages instead of rendering `MarkupString` (I4).
 5. Add `USER app` to the Dockerfiles (D2) and security headers plus a basic Content-Security-Policy to the Storefront (D3).
 6. Add validators for product, category and newsletter input, cap the search term, and add double opt-in for the newsletter (V1, V2, V4).
+
+---
+
+## F. Addendum: GitHub CI fails on vulnerable packages (analysis and applied fix)
+
+**Request:** check the severity of the NuGet vulnerabilities behind the failing CI, propose a solution, and let you verify it before any change. After your approval ("Option A, include the npm fix, update lab documentation and push") the fix was applied; sections F6 to F9 record what changed and what is still open.
+
+**Method:** I read the failing runs through `gh`, reproduced the failure locally, read the three GitHub security advisories, traced where each package comes from, checked whether our code can reach the vulnerable functions, and tested the candidate fixes in a scratch copy outside the repository before touching the repository itself.
+
+### F1. What exactly fails in CI
+
+Failing runs on commit `354acc4` (2026-11-01), repository `Sembster/NutsnBerries`:
+
+| Workflow / job | Failing step | Cause |
+|---|---|---|
+| `Code Analysis` / analyze | Analyze Code with StyleCop (`dotnet build -warnaserror`) | NuGet audit errors NU1902 and NU1903, in 5 projects |
+| `ci` / browser-e2e | Build browser E2E project (`-warnaserror`); the upload step fails afterwards only because nothing was produced | The same NuGet audit errors |
+| `ci` / build-test | Audit full npm build dependency tree | **A separate npm cause, not NuGet** (F5) |
+| `ci` / postgres16-archive | none | passes |
+
+How a NuGet advisory becomes a CI failure: since .NET 9 the SDK audits packages during restore and reports known vulnerabilities as warnings NU1901-NU1904. Both workflows that build with `-warnaserror` turn those warnings into errors.
+
+**Why it started failing without any code change:** the last green `Code Analysis` run was 2026-10-10 (`ef1a107`). The advisories were published on **2026-10-13** (Pkcs) and **2026-10-15** (MessagePack), and the first red run was **2026-10-15** (`6b3e104`). Our code did not change; the advisory database did.
+
+### F2. The vulnerabilities and their severity
+
+| ID | Package and version | Advisory | Advisory severity | Problem | Fixed in |
+|---|---|---|---|---|---|
+| N1 | `System.Security.Cryptography.Pkcs` 10.0.0 | GHSA-846f-f764-76mx (CVE-2026-84008) | **High**, CVSS 7.5 (network, no authentication, availability only) | `SignedCms.CheckSignature` re-parses attacker-controlled X.509 data repeatedly, so CPU use grows quadratically (denial of service) | 10.0.13 |
+| N2 | `System.Security.Cryptography.Pkcs` 10.0.0 | GHSA-2fmv-rv2c-59x7 (CVE-2026-70162) | **Medium**, CVSS 5.9 | On Windows, `EnvelopedCms.Decode` does quadratic work on attacker-supplied CMS/PKCS#7 attributes (denial of service) | 10.0.13 |
+| N3 | `MessagePack` 2.5.302 | GHSA-qhrr-8q5h-9q3h (CVE-2026-92707) | **Medium**, CVSS 5.3 | Deeply nested arrays make `PrimitiveObjectFormatter` allocate far too much memory before the depth limit applies (denial of service) | 2.5.303 (or 3.1.9) |
+
+All three are **denial-of-service only**: no data disclosure and no code execution.
+
+### F3. Where they come from, and what they mean for this project
+
+| Package | Dependency path | Projects affected | Reachable from our code? | Shipped to production? |
+|---|---|---|---|---|
+| `System.Security.Cryptography.Pkcs` | `BlazorShop.Infrastructure` > `MailKit 4.16.0` > `MimeKit 4.16.0` > Pkcs 10.0.0 | Infrastructure, API, Tests, E2E | **No evidence.** Our code never uses `SignedCms`, `EnvelopedCms` or S/MIME (0 matches in production code); `BlazorShop.Infrastructure/Services/EmailService.cs:6,11` only *sends* plain email. | **See F8:** this assembly is also part of the ASP.NET Core runtime, so what actually runs is decided by the runtime image, not only by the NuGet package. |
+| `MessagePack` | `BlazorShop.AppHost` > `Aspire.Hosting 13.4.6` > `StreamJsonRpc 2.25.29` > MessagePack 2.5.302 | AppHost, Tests, E2E | No: 0 uses in our code | **No**, development and test tooling only |
+
+**Practical risk for this lab: low.** The advisories are real, and the High one blocks CI, but exploiting them would need the app to parse attacker-supplied CMS/PKCS#7 data (it does not) or deserialize attacker-supplied MessagePack (it does not). The severity labels describe the library in general, not our usage.
+
+### F4. Options considered
+
+| Option | What changes | Edits upstream files? | Tested | Verdict |
+|---|---|---|---|---|
+| **A. Pin the two packages in new `Directory.Build.props` files** | Pkcs `10.0.13` pinned for Infrastructure, MessagePack `2.5.307` pinned for AppHost; dependent projects inherit the fixed versions | **No** (new files only), so it fits the "extend, do not edit" policy | **Yes** | **Chosen and applied** |
+| B. Upgrade `MailKit` and `MimeKit` to 4.18.2, and pin MessagePack | Edits two version numbers in `BlazorShop.Infrastructure.csproj`; MimeKit 4.18.2 itself depends on Pkcs 10.0.13 | Yes, 2 lines | Yes (build clean, 699 tests pass) | Good and "proper", but edits an upstream file; keep as the alternative |
+| C. Upgrade `Aspire.Hosting` 13.4.6 to 13.6.x | Pulls a newer StreamJsonRpc that requires the fixed MessagePack | Yes (several packages) | No | Larger change and more risk to the AppHost and E2E tests, for a dev-only package |
+| D. Suppress the warnings | Hides NU1902/NU1903 | Yes | not needed | **Not recommended**: it hides a High advisory instead of fixing it |
+| E. Update the runtime base images (`aspnet:10.0.6` and the SDK tag) to 10.0.13 or later | Changes the image tags in the three Dockerfiles (or passes build arguments) | Yes | No | **Open question for production, see F8** |
+
+**Adjustment made while applying Option A:** my first proposal put one `Directory.Build.props` at the solution root. Reading the Dockerfiles showed they copy **only specific project folders** and `.csproj` files, so a root-level file would never reach the container builds. The two props files therefore live **inside the project folders** that the Dockerfiles do copy (`BlazorShop.Infrastructure/` and `BlazorShop.AppHost/`). This is still new files only, and it behaves the same for solution builds, CI and Docker.
+
+### F5. A second, independent CI failure (npm, not NuGet)
+
+`ci` / build-test fails at **Audit full npm build dependency tree** (`npm audit --include=dev --audit-level=high`). It was already red on **2026-10-10**, before the NuGet advisories existed, so fixing NuGet alone would not have turned `ci` green. Locally reproduced: **6 advisories, 2 high and 4 moderate**:
+
+| Package (all transitive, from `tailwindcss`) | Severity | Issue |
+|---|---|---|
+| `brace-expansion` 2.0.0-2.1.6 | **High** | Quadratic-time expansion and uncontrolled recursion (3 advisories, DoS) |
+| `source-map-js` 1.0.0-1.2.1 | **High** | Event-loop denial of service via crafted source-map offsets |
+| `glob` 3.0.0-14.0.1 | Moderate | Cancellation bypass allows file-system traversal after a timeout (pulled in by `sucrase`) |
+| `minimatch` <11.0.1 | Moderate | Denial of service via glob-part amplification |
+| `postcss-selector-parser` <6.1.5 | Moderate | Quadratic complexity in selector parsing |
+| `sucrase` 3.35.0 | Moderate | Depends on the vulnerable `glob` |
+
+Practical risk: **low**. These are build-time tools (Tailwind compiling CSS) and are never shipped; the runtime-only audit reported 0 vulnerabilities throughout.
+
+### F6. What was changed
+
+1. **New file** `Lab1/NutsnBerries/BlazorShop.Infrastructure/Directory.Build.props`: pins `System.Security.Cryptography.Pkcs` to `10.0.13` (fixes N1 and N2).
+2. **New file** `Lab1/NutsnBerries/BlazorShop.AppHost/Directory.Build.props`: pins `MessagePack` to `2.5.307` (fixes N3).
+   Both files carry a comment saying why they exist and when to remove them. 10.0.13 is the first fixed Pkcs release (and exactly what MimeKit 4.18.2 itself requires); 2.5.307 is the newest 2.5.x and what the latest StreamJsonRpc declares, a patch-level change on the same minor version.
+3. **Modified** `Lab1/NutsnBerries/BlazorShop.Presentation/BlazorShop.Web/package-lock.json` through `npm audit fix`: three transitive packages updated (`postcss-selector-parser` 6.1.4 to 6.1.5, `source-map-js` 1.2.1 to 1.2.2, `sucrase` 3.35.0 to 3.35.1). Sucrase 3.35.1 no longer needs `glob`, so 37 old packages drop out (123 lockfile entries become 85). `package.json` is unchanged and no direct dependency changed. This is the only upstream file edited, a mechanical lockfile update.
+
+**Rollback:** delete the two props files and restore `package-lock.json` (or revert the commit).
+
+### F7. Verification
+
+| Check | Result |
+|---|---|
+| **Control:** scratch copy without pins, `dotnet build -warnaserror` | **Fails with the same NU1902/NU1903 errors as GitHub** (Infrastructure, API, AppHost, E2E) |
+| Real repo after the fix: `dotnet list package --vulnerable --include-transitive` | **No vulnerable packages**; resolved versions Pkcs 10.0.13 and MessagePack 2.5.307 |
+| Real repo: whole solution `dotnet build --no-restore -warnaserror` (what `Code Analysis` runs) | **0 warnings, 0 errors** |
+| Real repo: E2E project, Release, `-warnaserror` (what `ci` / browser-e2e builds) | **0 warnings, 0 errors** |
+| Real repo: unit tests | **699 passed, 0 failed, 10 skipped**, identical to the baseline |
+| Option B in the scratch copy | Also clean (vulnerability list, build, 699 tests) |
+| npm after `npm audit fix`: full audit (what CI runs) | **0 vulnerabilities**; runtime-only audit 0; generated `site.css` byte-identical to the committed file |
+
+**Not verified:** the GitHub run itself (see F9), the Playwright browser tests (they need Docker and a browser), Option C, and any container image (see F8).
+
+### F8. Correction found while applying the fix: where Pkcs really comes from at runtime
+
+When I published the API locally to inspect what it ships, **no `System.Security.Cryptography.Pkcs.dll` was in the output at all**, with or without the pin. Reason: this assembly is part of the **ASP.NET Core shared runtime** (`Microsoft.AspNetCore.App`, present in the installed 10.0.14 runtime). At publish, a NuGet package copy is dropped when the runtime already provides an equal or newer version. So my earlier statement in F3 of the first draft, that the package "ends up in the API" from MailKit, was incomplete.
+
+What follows for production:
+- What runs in a container is decided by the **runtime image**. The Dockerfiles use `aspnet:10.0.6-noble`, older than the fixed 10.0.13, so the runtime's own Pkcs is very likely still in the vulnerable range. I have **not** verified this against the image (it needs about 1 GB of base images that are not cached here).
+- The pin does clear CI, which only audits NuGet packages. In the Docker build, whose older SDK has an older runtime than 10.0.13, the pinned 10.0.13 package should be newer than the runtime's copy and therefore be published and win at run time. That is a reasoned expectation, not a proven fact.
+- The robust production fix is **Option E**: move both image tags to a patch release of .NET 10.0.13 or later. That edits upstream files (the Dockerfile `ARG` defaults) or needs build arguments in `compose.production.yml`, so it is left as a decision for you. Since this is a course lab and the vulnerable code is not reachable (F3), I did not apply it.
+- A `docker build` of the API image followed by reading its `*.deps.json` would settle the open question. It needs a ~1 GB download, so I have not run it without your go-ahead.
+
+### F9. Result on GitHub
+
+*To be filled in after the first CI run on the fix commit.*

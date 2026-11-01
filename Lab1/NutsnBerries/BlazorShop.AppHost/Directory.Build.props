@@ -1,0 +1,13 @@
+<Project>
+  <!--
+    Temporary security pin for a transitive package with a known vulnerability (NuGet audit NU1902).
+    Remove this file once Aspire.Hosting (via StreamJsonRpc) ships a dependency on a fixed MessagePack.
+
+    Development and test tooling only; the AppHost is not part of any container image.
+    Projects that reference BlazorShop.AppHost (Tests, E2E) inherit the pinned version.
+  -->
+  <ItemGroup>
+    <!-- GHSA-qhrr-8q5h-9q3h (moderate); fixed in 2.5.303. Comes in via Aspire.Hosting > StreamJsonRpc. -->
+    <PackageReference Include="MessagePack" Version="2.5.307" />
+  </ItemGroup>
+</Project>
