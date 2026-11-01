@@ -306,9 +306,11 @@ The production Dockerfiles and compose file pin exact image tags so base-image u
 Current pinned images in this repository:
 
 - PostgreSQL: `postgres:16.13-alpine3.23`
-- API build image: `mcr.microsoft.com/dotnet/sdk:10.0.202-noble`
-- API runtime image: `mcr.microsoft.com/dotnet/aspnet:10.0.6-noble`
-- Web build image: `mcr.microsoft.com/dotnet/sdk:10.0.202-noble`
+- API build image: `mcr.microsoft.com/dotnet/sdk:10.0.403-noble`
+- API runtime image: `mcr.microsoft.com/dotnet/aspnet:10.0.14-noble`
+- Storefront build image: `mcr.microsoft.com/dotnet/sdk:10.0.403-noble`
+- Storefront runtime image: `mcr.microsoft.com/dotnet/aspnet:10.0.14-noble`
+- Web build image: `mcr.microsoft.com/dotnet/sdk:10.0.403-noble`
 - Web runtime image: `nginx:1.27.5-alpine3.21`
 
 ## Storefront SEO Runtime Signals

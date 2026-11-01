@@ -8,7 +8,7 @@
 
 ### Summary
 
-I found **32 items**: 1 High, 7 Medium, 18 Low and 6 Informational. The code is stronger than its defaults: SQL is parameterized everywhere, uploads are carefully handled, JWT validation is strict, and there are no real secrets in the repository or its git history. The weak spots are a handful of insecure defaults, a few unvalidated admin and anonymous inputs, and logging that is more verbose than the configuration suggests. **Addendum F (added afterwards) covers the failing GitHub CI:** three vulnerable NuGet advisories (1 High, 2 Medium) in two packages, plus a separate npm audit failure, with a fix that was tested in a scratch copy first and then applied (two new props files and an npm lockfile update).
+I found **32 items**: 1 High, 7 Medium, 18 Low and 6 Informational. The code is stronger than its defaults: SQL is parameterized everywhere, uploads are carefully handled, JWT validation is strict, and there are no real secrets in the repository or its git history. The weak spots are a handful of insecure defaults, a few unvalidated admin and anonymous inputs, and logging that is more verbose than the configuration suggests. **Addendum F (added afterwards) covers the failing GitHub CI:** three vulnerable NuGet advisories (1 High, 2 Medium) in two packages, plus a separate npm audit failure, with a fix that was tested in a scratch copy first and then applied (two new props files and an npm lockfile update), followed by a base-image bump for the runtime exposure (F10).
 
 | Severity | Count | Items |
 |---|---|---|
@@ -123,7 +123,7 @@ I found **32 items**: 1 High, 7 Medium, 18 Low and 6 Informational. The code is 
 
 ## F. Addendum: GitHub CI fails on vulnerable packages (analysis and applied fix)
 
-**Request:** check the severity of the NuGet vulnerabilities behind the failing CI, propose a solution, and let you verify it before any change. After your approval ("Option A, include the npm fix, update lab documentation and push") the fix was applied; sections F6 to F9 record what changed and what is still open.
+**Request:** check the severity of the NuGet vulnerabilities behind the failing CI, propose a solution, and let you verify it before any change. After your approval ("Option A, include the npm fix, update lab documentation and push") the fix was applied; sections F6 to F10 record what changed and what is still open.
 
 **Method:** I read the failing runs through `gh`, reproduced the failure locally, read the three GitHub security advisories, traced where each package comes from, checked whether our code can reach the vulnerable functions, and tested the candidate fixes in a scratch copy outside the repository before touching the repository itself.
 
@@ -169,7 +169,7 @@ All three are **denial-of-service only**: no data disclosure and no code executi
 | B. Upgrade `MailKit` and `MimeKit` to 4.18.2, and pin MessagePack | Edits two version numbers in `BlazorShop.Infrastructure.csproj`; MimeKit 4.18.2 itself depends on Pkcs 10.0.13 | Yes, 2 lines | Yes (build clean, 699 tests pass) | Good and "proper", but edits an upstream file; keep as the alternative |
 | C. Upgrade `Aspire.Hosting` 13.4.6 to 13.6.x | Pulls a newer StreamJsonRpc that requires the fixed MessagePack | Yes (several packages) | No | Larger change and more risk to the AppHost and E2E tests, for a dev-only package |
 | D. Suppress the warnings | Hides NU1902/NU1903 | Yes | not needed | **Not recommended**: it hides a High advisory instead of fixing it |
-| E. Update the runtime base images (`aspnet:10.0.6` and the SDK tag) to 10.0.13 or later | Changes the image tags in the three Dockerfiles (or passes build arguments) | Yes | No | **Open question for production, see F8** |
+| E. Update the runtime base images (`aspnet:10.0.6` and the SDK tag) to 10.0.13 or later | Changes the image tags in the three Dockerfiles | Yes (5 lines) | Tags checked against registry metadata and BuildKit lint; images built by CI | **Applied as a follow-up, see F8 and F10** |
 
 **Adjustment made while applying Option A:** my first proposal put one `Directory.Build.props` at the solution root. Reading the Dockerfiles showed they copy **only specific project folders** and `.csproj` files, so a root-level file would never reach the container builds. The two props files therefore live **inside the project folders** that the Dockerfiles do copy (`BlazorShop.Infrastructure/` and `BlazorShop.AppHost/`). This is still new files only, and it behaves the same for solution builds, CI and Docker.
 
@@ -193,7 +193,7 @@ Practical risk: **low**. These are build-time tools (Tailwind compiling CSS) and
 1. **New file** `Lab1/NutsnBerries/BlazorShop.Infrastructure/Directory.Build.props`: pins `System.Security.Cryptography.Pkcs` to `10.0.13` (fixes N1 and N2).
 2. **New file** `Lab1/NutsnBerries/BlazorShop.AppHost/Directory.Build.props`: pins `MessagePack` to `2.5.307` (fixes N3).
    Both files carry a comment saying why they exist and when to remove them. 10.0.13 is the first fixed Pkcs release (and exactly what MimeKit 4.18.2 itself requires); 2.5.307 is the newest 2.5.x and what the latest StreamJsonRpc declares, a patch-level change on the same minor version.
-3. **Modified** `Lab1/NutsnBerries/BlazorShop.Presentation/BlazorShop.Web/package-lock.json` through `npm audit fix`: three transitive packages updated (`postcss-selector-parser` 6.1.4 to 6.1.5, `source-map-js` 1.2.1 to 1.2.2, `sucrase` 3.35.0 to 3.35.1). Sucrase 3.35.1 no longer needs `glob`, so 37 old packages drop out (123 lockfile entries become 85). `package.json` is unchanged and no direct dependency changed. This is the only upstream file edited, a mechanical lockfile update.
+3. **Modified** `Lab1/NutsnBerries/BlazorShop.Presentation/BlazorShop.Web/package-lock.json` through `npm audit fix`: three transitive packages updated (`postcss-selector-parser` 6.1.4 to 6.1.5, `source-map-js` 1.2.1 to 1.2.2, `sucrase` 3.35.0 to 3.35.1). Sucrase 3.35.1 no longer needs `glob`, so 37 old packages drop out (123 lockfile entries become 85). `package.json` is unchanged and no direct dependency changed. In this first step it was the only upstream file edited, a mechanical lockfile update.
 
 **Rollback:** delete the two props files and restore `package-lock.json` (or revert the commit).
 
@@ -218,8 +218,8 @@ When I published the API locally to inspect what it ships, **no `System.Security
 What follows for production:
 - What runs in a container is decided by the **runtime image**. The Dockerfiles use `aspnet:10.0.6-noble`, older than the fixed 10.0.13, so the runtime's own Pkcs is very likely still in the vulnerable range. I have **not** verified this against the image (it needs about 1 GB of base images that are not cached here).
 - The pin does clear CI, which only audits NuGet packages. In the Docker build, whose older SDK has an older runtime than 10.0.13, the pinned 10.0.13 package should be newer than the runtime's copy and therefore be published and win at run time. That is a reasoned expectation, not a proven fact.
-- The robust production fix is **Option E**: move both image tags to a patch release of .NET 10.0.13 or later. That edits upstream files (the Dockerfile `ARG` defaults) or needs build arguments in `compose.production.yml`, so it is left as a decision for you. Since this is a course lab and the vulnerable code is not reachable (F3), I did not apply it.
-- A `docker build` of the API image followed by reading its `*.deps.json` would settle the open question. It needs a ~1 GB download, so I have not run it without your go-ahead.
+- The robust production fix is **Option E**: move both image tags to a .NET 10.0.13 or later patch. It was applied as a follow-up, see F10.
+- A `docker build` of the API image followed by reading its `*.deps.json` would prove which Pkcs version an image ships. It needs a ~1 GB download and has not been run.
 
 ### F9. Result on GitHub
 
@@ -234,4 +234,40 @@ Fix commit `274564d`, pushed 2026-11-01. **Both workflows are green**, the first
 
 This also settles two items listed as not verified in F7: the Playwright browser tests pass (two consecutive runs), and the three container images (API, Storefront, Web) build with the props files present.
 
-**Still open (decision for you):** the container build passing does not show *which* Pkcs version ends up inside the API image. As explained in F8, the runtime image tag (`aspnet:10.0.6`) is the real production exposure, and Option E (move the image tags to a 10.0.13 or later patch) has not been applied.
+**Follow-up:** the container build passing does not show *which* Pkcs version ends up inside the API image. As explained in F8, the runtime image tag was the real production exposure; it was addressed afterwards by Option E, see F10.
+
+### F10. Follow-up: Option E applied (Docker base-image tags)
+
+**Request:** "Bump the Dockerfile image tags", the open production question from F8.
+
+**What changed (5 lines in 3 Dockerfiles, plus the runbook that documents them):**
+
+| File | Before | After |
+|---|---|---|
+| `BlazorShop.Presentation/BlazorShop.API/Dockerfile` | `sdk:10.0.202-noble`, `aspnet:10.0.6-noble` | `sdk:10.0.403-noble`, `aspnet:10.0.14-noble` |
+| `BlazorShop.Presentation/BlazorShop.Storefront/Dockerfile` | `sdk:10.0.202-noble`, `aspnet:10.0.6-noble` | `sdk:10.0.403-noble`, `aspnet:10.0.14-noble` |
+| `BlazorShop.Presentation/BlazorShop.Web/Dockerfile` | `sdk:10.0.202-noble` | `sdk:10.0.403-noble` |
+| `docs/production-runbook.md` | listed the old tags and left out the Storefront | lists the new tags, Storefront added |
+
+**Why these two tags.** The SDK and runtime images were chosen as a matching pair, as upstream had them. I read the image metadata straight from the Microsoft registry (no layers downloaded), which shows what each tag really contains:
+
+| Image tag | Runtime inside | Note |
+|---|---|---|
+| `aspnet:10.0.6-noble` (old) | 10.0.6 | below the fixed 10.0.13 |
+| `aspnet:10.0.14-noble` (new) | 10.0.14 | past the fix; the same runtime I used for all local tests |
+| `sdk:10.0.202-noble` (old) | 10.0.6 | |
+| `sdk:10.0.403-noble` (new) | 10.0.14 | the same SDK used for the local builds and test runs |
+
+The advisory's own remediation text is to "install the latest version of .NET" and restart the apps, which is what a newer base image does.
+
+**Left unchanged on purpose:**
+- `rehearsal/run-staging-rehearsal.sh` also names the old tags, but only to pull and log them as evidence; the images it builds come from the Dockerfiles of two fixed historical commits, so the rehearsal reproduces a historical environment by design.
+- The `nginx:1.27.5` image for the Web client is not part of this advisory and was not reviewed here.
+
+**Verification:** BuildKit's lint mode (`docker buildx build --check`) passes for all three Dockerfiles: the new tags resolve in the registry and there are no warnings. No test references the tags. A full local image build was not run, because it needs about 1 GB of base images; the GitHub run below builds all three images.
+
+**Still unproven:** reading the Pkcs assembly inside a built image. The conclusion rests on the tag-to-runtime mapping above, which comes from the registry metadata, not on opening a container.
+
+**Cost and rollback:** this edits three upstream files (5 lines), so the modified-file count is now **78** (966 of 1,059 files identical, 91.2%). Upstream will probably bump these tags itself, so expect a trivial merge conflict later. Rollback: restore the three Dockerfiles and the runbook lines.
+
+**Result on GitHub:** *to be filled in after the CI run on the image-bump commit.*

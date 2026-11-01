@@ -1,4 +1,4 @@
-ARG DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.202-noble
+ARG DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.403-noble
 ARG NGINX_IMAGE=nginx:1.27.5-alpine3.21
 
 FROM ${DOTNET_SDK_IMAGE} AS build
