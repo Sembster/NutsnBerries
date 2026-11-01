@@ -73,7 +73,7 @@ These describe how the code is structured today and the rules to follow when cha
 3. **Validate at the boundary and fail fast.** Request bodies are validated with FluentValidation: validators live in `BlazorShop.Application/Validations` (and `BlazorShop.API/Hardening` for the newsletter) and run through one global MVC filter, `FluentValidationActionFilter`, which answers 400 with a `ServiceResponse`. Controllers and services need no validation code; a new request DTO just gets a validator class (limits are in `CatalogConstraints`). Configuration uses the options pattern with `ValidateOnStart()`, so a bad setting stops startup instead of failing later: this covers `Commerce:Currency`, the JWT key (missing, placeholder or short keys are rejected), Stripe, bank transfer, recommendations and the Storefront's demo options. A new options class gets an `IValidateOptions` registered in `AddNutsnBerriesHardening`.
 4. **One place for money rules.** Amounts are `decimal`. Rounding and minor units go through `CurrencyMoney`; display goes only through `PriceFormatter`. Never hardcode a currency symbol or format a price inline.
 5. **Orders keep their own currency.** The purchase currency is copied onto each order and payment transaction when it is created, so changing the store currency never reinterprets old orders.
-6. **Idempotent checkout, reconciled payment state.** Checkout uses idempotency keys, so a retry must never create a second order. For Stripe, `PaymentTransaction.Status` is authoritative and `Order.PaymentStatus` changes only through Stripe webhook reconciliation; there is deliberately no generic payment-status setter (see `docs/order-lifecycle.md`).
+6. **Idempotent checkout, reconciled payment state.** Checkout uses idempotency keys, so a retry must never create a second order. For Stripe, `PaymentTransaction.Status` is authoritative and `Order.PaymentStatus` changes only through Stripe webhook reconciliation; there is deliberately no generic payment-status setter (see `docs/order-lifecycle.md`). The checkout code is in `BlazorShop.Application/Services/Payment`: `CheckoutOrchestrator` claims the idempotency key, creates the order and completes cash and bank-transfer payments; `StripeCheckoutFlow` handles everything that happens once a Stripe order exists; `CheckoutCartResolver`, `BankTransferNotifier` and the pure `CheckoutOutcomes` and `CheckoutOrderFactory` do the rest. Keep new Stripe states in the flow, and extend `CheckoutOrchestratorCharacterizationTests` when changing any of it.
 7. **Separate the public read path from admin writes, and authorize explicitly.**
    - Public catalog endpoints (the slug endpoints in `PublicCatalogController`, and the anonymous `GET`s on `ProductController` and `CategoryController`) all go through `IPublicCatalogService`, which returns only published items; the `IsPublished` filtering is enforced in the repositories.
    - Every admin read and every state-changing admin action requires `[Authorize(Roles = "Admin")]`, either on the class (all `Admin*` controllers and `MetricsController`) or on each action (`Product`, `ProductVariant`, `Category`, `FileUpload`, and the admin actions in `Cart`). Checkout requires the `User` role.
@@ -86,7 +86,7 @@ These describe how the code is structured today and the rules to follow when cha
 
 NutsnBerries is a fork of upstream BlazorShop, and the plan is to move it into a separate repo later where upstream updates can be merged with little manual work. We are skipping upstream merges for now. To keep that future merge cheap, **customizations should be extensions on the base code, not modifications of upstream files.**
 
-At the fork point upstream had 1,059 files. Today 966 are identical to upstream, 78 are modified, 15 were deleted (the old fashion product images) and 40 are new. Every modified file is a possible merge conflict, so the goal is to stop that number growing and to shrink it over time.
+At the fork point upstream had 1,059 files. Today 965 are identical to upstream, 79 are modified, 15 were deleted (the old fashion product images) and 46 are new. Every modified file is a possible merge conflict, so the goal is to stop that number growing and to shrink it over time.
 
 When making a change:
 
@@ -96,7 +96,7 @@ When making a change:
 4. **Prefer changes upstream could accept.** Generic improvements (for example making currency or the brand name configurable) are good candidates to offer upstream as pull requests. Once merged upstream they stop being our private diff.
 5. **Know the limits.** Upstream hardcodes some things in Razor pages (prices, brand text, hero copy), and a page cannot be extended from outside, so those stay as small modifications.
 
-The theme CSS and the SEO-settings seed have already been built as extensions. The other existing modifications are not being refactored yet. When the separate repo is created, sort the remaining modified files into "can become an extension", "should go upstream" and "must stay a patch".
+The theme CSS and the SEO-settings seed have already been built as extensions. The one deliberate exception is `CheckoutOrchestrator.cs`, which was split into six files to make the payment path reviewable (see `Lab 2/Part B/Prompt 3.md`, addendum); it is a "must stay a patch" file unless the split is accepted upstream. The other existing modifications are not being refactored yet. When the separate repo is created, sort the remaining modified files into "can become an extension", "should go upstream" and "must stay a patch".
 
 ## Running locally
 
@@ -133,7 +133,7 @@ dotnet build BlazorShop.sln -c Release
 dotnet test BlazorShop.Tests/BlazorShop.Tests.csproj -c Release
 ```
 
-The Web project runs `npm ci` and the Tailwind build as part of `dotnet build`. Pass `-p:SkipNpm=true` to skip that when Node is not available. The unit tests currently pass (692 passed, 10 skipped smoke tests that need a running site).
+The Web project runs `npm ci` and the Tailwind build as part of `dotnet build`. Pass `-p:SkipNpm=true` to skip that when Node is not available. The tests currently pass (800 passed, 10 skipped smoke tests that need a running site). The PostgreSQL tests start containers through Testcontainers, so Docker must be running for `dotnet test`.
 
 ## Conventions and gotchas
 
