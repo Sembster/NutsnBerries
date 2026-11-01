@@ -82,6 +82,22 @@ These describe how the code is structured today and the rules to follow when cha
 9. **The schema changes only through EF migrations.** No hand-edited tables. The API applies migrations on startup. Seed data is idempotent: `DevelopmentCatalogSeeder` upserts by fixed ID, so running it twice is harmless.
 10. **Layered configuration, secrets out of git, resilient and observable services.** Settings come from `appsettings`, then environment variables, then user-secrets, and no secret is committed. Service-to-service HTTP uses the resilience handler (timeouts and retries), and the API exposes health endpoints and structured Serilog logging.
 
+## Customization policy: extend, do not edit
+
+NutsnBerries is a fork of upstream BlazorShop, and the plan is to move it into a separate repo later where upstream updates can be merged with little manual work. We are skipping upstream merges for now. To keep that future merge cheap, **customizations should be extensions on the base code, not modifications of upstream files.**
+
+At the fork point upstream had 1,059 files. Today 971 are identical to upstream, 73 are modified, 15 were deleted (the old fashion product images) and 23 are new. Every modified file is a possible merge conflict, so the goal is to stop that number growing and to shrink it over time.
+
+When making a change:
+
+1. **Prefer new files over edits.** Put our own code in new, clearly named files or projects (as with `PriceFormatter.cs`), for example a separate CSS file for the theme or our own seeder class, instead of editing upstream's `storefront.css` or `DevelopmentCatalogSeeder`.
+2. **Use configuration before code.** If a setting already exists (such as `StorefrontSeo:SiteName` or `Commerce:Currency`), change the setting rather than the code that reads it.
+3. **If an upstream file must change, keep the edit minimal.** A one-line hook that calls into our own code is better than rewriting the file. Keep the diff small and localized.
+4. **Prefer changes upstream could accept.** Generic improvements (for example making currency or the brand name configurable) are good candidates to offer upstream as pull requests. Once merged upstream they stop being our private diff.
+5. **Know the limits.** Upstream hardcodes some things in Razor pages (prices, brand text, hero copy), and a page cannot be extended from outside, so those stay as small modifications.
+
+Existing modifications are not being refactored yet. When the separate repo is created, sort the modified files into "can become an extension", "should go upstream" and "must stay a patch".
+
 ## Running locally
 
 Everything runs over plain HTTP. Run from `Lab1/NutsnBerries` (bash syntax; on Windows Docker Desktop must be running first):
