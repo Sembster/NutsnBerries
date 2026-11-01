@@ -270,4 +270,4 @@ The advisory's own remediation text is to "install the latest version of .NET" a
 
 **Cost and rollback:** this edits three upstream files (5 lines), so the modified-file count is now **78** (966 of 1,059 files identical, 91.2%). Upstream will probably bump these tags itself, so expect a trivial merge conflict later. Rollback: restore the three Dockerfiles and the runbook lines.
 
-**Result on GitHub:** *to be filled in after the CI run on the image-bump commit.*
+**Result on GitHub** (commit `fcec08b`, 2026-11-01): **both workflows are green.** `Code Analysis` succeeded. In `ci`, `build-test` succeeded, including the unit tests, both npm audits and the three container image builds (API, Storefront, Web) with the new `sdk:10.0.403` and `aspnet:10.0.14` bases; `browser-e2e` succeeded with the Playwright suite passing in both consecutive runs; and `postgres16-archive` succeeded. So the image bump did not break any build or test. What this does not show is the Pkcs version inside the built images (see "Still unproven" above).
