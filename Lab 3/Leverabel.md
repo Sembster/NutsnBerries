@@ -65,8 +65,8 @@ Hypoteserna är ordnade efter hur väl de förklarar felet och hur mycket stöd 
 |---|---|---|---|
 | 1.1 | `git log upstream/master -S"BG00UNCR70001512345678"` för att hitta var värdet kom in | Första träffen är den commit som införde bankbetalning | **Utfört:** `91818da`, `6d1896e`, `57dbd29` |
 | 1.2 | `grep -rn "BG00UNCR70001512345678"` i hela repot (utom bygg-mappar) | Värdet finns i kod, i konfiguration och i ett test, ingenstans med förklaring | **Utfört:** `BankTransferNotifier.cs:34`, `appsettings.json:45`, `appsettings.Development.json:9`, `StartupValidationTests.cs:125` |
-| 1.3 | Skriv ett nytt enhetstest: `BankTransferSettings` helt tom, bankbetalning genomförs | Svaret innehåller `Iban == "BG00UNCR70001512345678"`, `Beneficiary` och `BankName` är tomma, och mejltexten innehåller samma värden | Ej utfört |
-| 1.4 | Mutationstest som i Lab 2: ta bort reservvärdet tillfälligt och kör `dotnet test` | Bara tester som bygger orkestreraren med tomma inställningar går sönder. Ett sådant bygge finns i `InventoryReservationPostgreSqlTests.cs:238`, men det ligger i ett Stripe-test (`PaymentInitializationFailure_ReleasesReservationAndRestoresStock`), och bankbetalningstestet vid rad 300 använder i stället en hjälpmetod med ifyllda inställningar (`BG00TEST`). Vid läsning verkar alltså inget befintligt test bero på reservvärdet | Ej utfört. Själva mutationskörningen återstår (läsningen ovan rättar ett tidigare osäkert antagande) |
+| 1.3 | Skriv ett nytt enhetstest: `BankTransferSettings` helt tom, bankbetalning genomförs | Svaret innehåller `Iban == "BG00UNCR70001512345678"`, `Beneficiary` och `BankName` är tomma, och mejltexten innehåller samma värden | **Utfört i Steg 2:** `BankTransferMissingConfigurationTests`, två tester, godkända. Se "Resultat av körning" |
+| 1.4 | Mutationstest som i Lab 2: ta bort reservvärdet tillfälligt och kör `dotnet test` | Bara tester som bygger orkestreraren med tomma inställningar går sönder. Ett sådant bygge finns i `InventoryReservationPostgreSqlTests.cs:238`, men det ligger i ett Stripe-test (`PaymentInitializationFailure_ReleasesReservationAndRestoresStock`), och bankbetalningstestet vid rad 300 använder i stället en hjälpmetod med ifyllda inställningar (`BG00TEST`). Vid läsning verkar alltså inget befintligt test bero på reservvärdet | **Utfört i Steg 2:** 800 godkända, 0 underkända. Inget befintligt test beror på reservvärdet. Se "Resultat av körning" |
 | 1.5 | Läs de två ställen där `BuildInfo` anropas (`ExecuteOwnedCheckoutAsync` och `ResumeCommittedOrderAsync`) och kontrollera att inget av dem kontrollerar inställningarna först | Ingen kontroll finns | **Utfört** vid läsning: ingen kontroll |
 
 **Vad skulle motbevisa hypotesen:** att commit `91818da` visar att reservvärdet infördes som skydd mot något annat än saknad konfiguration (steg 1.1 pekar mot demobruk), eller att steg 1.3 visar att `Iban` aldrig kan vara tom i praktiken.
@@ -131,7 +131,7 @@ Det förvärras av att kvittensen sparas: kassaflödet bygger bankinstruktionern
 ### Vad som är gjort och inte gjort
 
 - **Gjort:** läsning av koden och konfigurationen, `git log -S` över originalets historik, sökning i compose- och env-filer, läsning av ärende #130 och de berörda testerna.
-- **Inte gjort:** inget kördes. Verifieringsstegen markerade "Ej utfört" återstår, och ingen hypotes är därför bekräftad, bara stödd av observerad kod. Inga kodändringar har gjorts.
+- **Inte gjort:** inget kördes. Verifieringsstegen markerade "Ej utfört" återstår, och ingen hypotes är därför bekräftad, bara stödd av observerad kod. Inga kodändringar har gjorts. *Uppdatering: steg 1.3 och 1.4 kördes därefter i Steg 2, se "Resultat av körning". Då lades en ny testfil till, men ingen produktionskod ändrades.*
 - **Begränsning:** "förväntat resultat" är vår förutsägelse utifrån läsning, inte mätning.
 
 ## Steg 2
@@ -189,4 +189,76 @@ Om du vill gå från läsning till bevis efter genomgången, i ordning efter min
 2. **Nytt test:** `BankTransferSettings` helt tom, en bankbetalning genomförs. Förväntat: `Iban` är `BG00UNCR70001512345678`, `Beneficiary` och `BankName` är tomma, och mejltexten innehåller samma värden.
 3. **Git:** `git show 91818da --stat` och sök i diffen efter `BG00UNCR` för att läsa den ursprungliga koden i sitt sammanhang.
 
-*Ingenting av detta är utfört i Steg 2. Kolumnen "Redan observerat" kommer från vår läsning av koden, inte från körning.*
+*Den frivilliga bekräftelsen genom körning gjordes efter genomgången, se "Resultat av körning" sist i Steg 2. Kolumnen "Redan observerat" kommer från vår läsning av koden, inte från körning.*
+
+### Resultat av genomgången
+
+Alla nio punkter i undersökningsordningen är genomgångna. **Allt nedan är läst i koden. Inget är bekräftat genom körning.** Radnumren gäller commit `d41b1b5`.
+
+| # | Resultat |
+|---|---|
+| 1 | `BankTransferSettings.cs`: `Iban`, `Beneficiary` och `BankName` är `string = string.Empty`. Bara `AdditionalInfo` är nullbar. Ett saknat värde ser därför ut som ett giltigt tomt värde. |
+| 2 | `BlazorShop.Infrastructure/DependencyInjection.cs:191` binder sektionen med bara `Configure<BankTransferSettings>(...)`. Grannarna har kontroll vid start: Demo (rad 46–55), CheckoutIdempotency (176–183) och EmailSettings (187–190). **Bank transfer är den enda obevakade.** Det ser ut som en miss och inte ett val. Vår validator läggs på först i `NutsnBerriesHardeningExtensions.cs:36`, och den godkänner en tom sektion. |
+| 3 | `BankTransferNotifier.BuildInfo`: bara `Iban` (rad 33–35) har en reserv. `Beneficiary`, `BankName` och `AdditionalInfo` kopieras rakt av. Ingen kommentar förklarar reserven. |
+| 4 | `TrySendEmailAsync` bygger mejlet på det `BuildInfo` gav, inklusive reservvärdet. Det enda som kontrolleras är kundens e-postadress (rad 48). `catch` på rad 66 loggar och sväljer fel. |
+| 5 | `ExecuteOwnedCheckoutAsync`: före `BuildInfo` (rad 201) kontrolleras betalsätt, befintlig order, varukorg och belopp, men aldrig inställningarna. Ordningen är `BuildInfo`, sedan `SetPendingOutcomeAsync` (206), sedan lagerreservation (218). Kvittensen med reservvärdet sparas alltså innan ordern är klar. |
+| 6 | `ResumeCommittedOrderAsync` (268) bygger `BuildInfo` på nytt bara om ingen kvittens finns sparad, annars används den sparade. `CompleteLocalPaymentAsync` (295–298) mejlar det som ligger i kvittensen. Reservvärdet nås alltså via två vägar. |
+| 7 | `Cart.razor:183–190`: bank, mottagare och IBAN visas utan villkor. Bara `AdditionalInfo` har en `IsNullOrWhiteSpace`-kontroll. `Cart.razor.cs:291–295` kontrollerar bara `BankTransfer is not null`. |
+| 8 | Införd i `91818da` (2025-08-20) i `CartService`, i mejlkoden. Commit-meddelandet nämner `BankTransferSettings` och mejl men säger ingenting om ett standard-IBAN eller varför. I `6d1896e` (#101) togs raden bort från mejlkoden och samma uttryck, med samma värde, byggdes in i den nya `BuildBankTransferInfo`. Ingen `.md`-fil i `Lab1` nämner reservvärdet eller exempel-IBAN:et. |
+| 9 | Inget test kräver reservvärdet. `new BankTransferSettings()` förekommer bara i ett Stripe-test (`InventoryReservationPostgreSqlTests.cs:238`) och i validatortestet (`StartupValidationTests.cs:117`). Alla banktester använder `BG00TEST`. Inget test kräver att tom konfiguration avvisas. Två tester kräver att den *godkänns*: `BankTransfer_EmptySectionIsAllowed` (:115) och `BankTransfer_ShippedSampleValuesPass` (:121). |
+
+#### Utfall enligt beslutsregeln
+
+| Stödtecken | Utfall |
+|---|---|
+| 1. Reserven finns bara vid användningen, inte i validering, betalsättslista eller kassaflödets början | **Håller** (punkt 2, 3, 5) |
+| 2. Reserven är inkonsekvent, bara IBAN har en | **Håller** (punkt 3) |
+| 3. Värdet är kopierat från exempelkonfigurationen och infördes med funktionen | **Håller** (punkt 8, och `appsettings.json` ändrades i samma commit) |
+| 4. Ingen kommentar, dokumentation eller test förklarar reserven | **Håller** (punkt 3, 8, 9) |
+| 5. Skärm och mejl återger värdet utan kontroll | **Håller** (punkt 4, 6, 7) |
+
+| Motsägande tecken | Utfall |
+|---|---|
+| 1. En kontroll före `BuildInfo` | **Hittades inte** (punkt 5) |
+| 2. Ett avsiktligt beteende angivet i commit eller dokument | **Hittades inte** (punkt 8) |
+| 3. Ett test eller dokument som kräver reserven | **Hittades inte** (punkt 9) |
+| 4. Gränssnittet döljer instruktionerna när fälten är tomma | **Hittades inte** (punkt 7) |
+
+#### Slutsats
+
+Enligt beslutsregeln **stämmer hypotes 1**. Alla fem stödtecken håller och inget motsägande tecken hittades.
+
+**Förbehåll:**
+
+- **Avsikten är en slutsats.** Läsningen visar mekanismen med säkerhet: ett tomt värde ersätts på användningsstället och fortsätter därefter ända till kunden. Att reserven var en *demobekvämlighet* är en slutsats, eftersom commit-meddelandet inte anger något skäl.
+- **Punkt 2 pekar åt två håll.** Att bank transfer är den enda obevakade grannen stöder hypotes 1 (den modellerades aldrig som ett tillstånd som kan saknas), men också hypotes 3 (ingen definierade vad "konfigurerad" betyder).
+- **Ej läst:** testet `CheckoutIdempotencyPostgreSqlTests.cs:90` (`SequentialBankReplay_ReusesReservationInstructionsAndDoesNotResendEmail`) är relevant för hypotes 3, eftersom namnet tyder på att sparade instruktioner återanvänds. Det hör till en senare undersökning.
+- **Frivilliga bekräftelser:** mutationstestet och det nya testet med tomma inställningar är körda efter genomgången, se "Resultat av körning" nedan.
+
+### Resultat av körning
+
+De två frivilliga bekräftelserna är körda. Docker Desktop var avstängd och startades först, så att alla 61 PostgreSQL-tester ingår. Ingen produktionskod är ändrad: mutationen återställdes automatiskt efter varje körning, och `git diff` visade inga ändringar i produktionskoden.
+
+| Körning | Resultat |
+|---|---|
+| **Mutationstest** (verifieringssteg 1.4): raderna 33–35 i `BankTransferNotifier.BuildInfo` ersattes tillfälligt med `Iban = _bankTransferSettings.Iban`, hela testsviten kördes | **800 godkända, 0 underkända**, 10 överhoppade. Inget befintligt test beror på reservvärdet |
+| **Nytt test** (verifieringssteg 1.3): ny fil `BlazorShop.Tests/Application/Services/Payment/BankTransferMissingConfigurationTests.cs`, två tester, på oförändrad kod | **2 godkända**. Beteendet går att återskapa |
+| Samma två tester med reservvärdet borttaget | **2 underkända**. Testerna fångar alltså felet |
+| Hela sviten med den nya filen, oförändrad kod | **802 godkända, 0 underkända**, 10 överhoppade |
+
+#### Vad de nya testerna visar
+
+1. **`AllBankDetailsMissing_StillCreatesTheOrderAndReturnsTheBuiltInIban`.** Med helt tom `BankTransferSettings` genomförs en bankbetalning ändå:
+   - Ordern skapas och lagret reserveras (`CreateOrderWithInventoryAsync` anropas en gång med `Reserved`).
+   - Kunden får IBAN `BG00UNCR70001512345678`, medan mottagare och bank är tomma.
+   - Mejlet innehåller `Bank: <b></b>` och `Beneficiary: <b></b>` tillsammans med det inbyggda IBAN:et.
+2. **`OnlyTheIbanMissing_PairsTheBuiltInIbanWithTheConfiguredBeneficiaryAndBank`.** Om bara IBAN saknas men mottagare och bank är ifyllda kombineras det inbyggda IBAN:et med den *riktiga* mottagaren och banken. Kunden ser då en instruktion som ser äkta ut men som har ett kontonummer butiken aldrig har valt. Det är ett skarpare fall än det helt tomma, eftersom inget i mejlet avslöjar att något saknas.
+
+#### Slutsats efter körning
+
+- **Hypotes 1 är bekräftad genom körning för mekanismen:** en saknad IBAN ersätts på användningsstället och når kund, mejl och lager utan någon kontroll. Förbehållet kvarstår att *avsikten* (demobekvämlighet) är en slutsats och inte något körningen kan visa.
+- **Reservvärdet var helt otestat.** Det kunde tas bort utan att något test märkte det. Det kan förklara varför det levde kvar genom flera omskrivningar (`6d1896e` och vår uppdelning i Lab 2).
+- **Stöd för hypotes 3 (delvis):** kassan skapar order och reserverar lager utan bankuppgifter, så skyddet vid exekvering saknas. Skyddet vid start och i betalsättslistan är fortfarande bara läst (verifieringssteg 3.3), inte kört.
+- **Ej körda:** verifieringsstegen för hypotes 2 (2.3, 2.4, 2.5) och hypotes 3 (3.3, 3.4, 3.5).
+
+*De nya testerna beskriver felets nuvarande beteende. När felet åtgärdas ska de ersättas av tester som kräver att bankbetalningen avvisas.*
