@@ -66,7 +66,7 @@ Hypoteserna är ordnade efter hur väl de förklarar felet och hur mycket stöd 
 | 1.1 | `git log upstream/master -S"BG00UNCR70001512345678"` för att hitta var värdet kom in | Första träffen är den commit som införde bankbetalning | **Utfört:** `91818da`, `6d1896e`, `57dbd29` |
 | 1.2 | `grep -rn "BG00UNCR70001512345678"` i hela repot (utom bygg-mappar) | Värdet finns i kod, i konfiguration och i ett test, ingenstans med förklaring | **Utfört:** `BankTransferNotifier.cs:34`, `appsettings.json:45`, `appsettings.Development.json:9`, `StartupValidationTests.cs:125` |
 | 1.3 | Skriv ett nytt enhetstest: `BankTransferSettings` helt tom, bankbetalning genomförs | Svaret innehåller `Iban == "BG00UNCR70001512345678"`, `Beneficiary` och `BankName` är tomma, och mejltexten innehåller samma värden | Ej utfört |
-| 1.4 | Mutationstest som i Lab 2: ta bort reservvärdet tillfälligt och kör `dotnet test` | Bara tester som bygger orkestreraren med tomma inställningar går sönder. Ett sådant bygge finns i `InventoryReservationPostgreSqlTests.cs:238`. Om det är det som används av testet vid rad 300 beror ett test på reservvärdet | Ej utfört. Beroendet vid rad 238–300 är inte bekräftat |
+| 1.4 | Mutationstest som i Lab 2: ta bort reservvärdet tillfälligt och kör `dotnet test` | Bara tester som bygger orkestreraren med tomma inställningar går sönder. Ett sådant bygge finns i `InventoryReservationPostgreSqlTests.cs:238`, men det ligger i ett Stripe-test (`PaymentInitializationFailure_ReleasesReservationAndRestoresStock`), och bankbetalningstestet vid rad 300 använder i stället en hjälpmetod med ifyllda inställningar (`BG00TEST`). Vid läsning verkar alltså inget befintligt test bero på reservvärdet | Ej utfört. Själva mutationskörningen återstår (läsningen ovan rättar ett tidigare osäkert antagande) |
 | 1.5 | Läs de två ställen där `BuildInfo` anropas (`ExecuteOwnedCheckoutAsync` och `ResumeCommittedOrderAsync`) och kontrollera att inget av dem kontrollerar inställningarna först | Ingen kontroll finns | **Utfört** vid läsning: ingen kontroll |
 
 **Vad skulle motbevisa hypotesen:** att commit `91818da` visar att reservvärdet infördes som skydd mot något annat än saknad konfiguration (steg 1.1 pekar mot demobruk), eller att steg 1.3 visar att `Iban` aldrig kan vara tom i praktiken.
@@ -133,3 +133,60 @@ Det förvärras av att kvittensen sparas: kassaflödet bygger bankinstruktionern
 - **Gjort:** läsning av koden och konfigurationen, `git log -S` över originalets historik, sökning i compose- och env-filer, läsning av ärende #130 och de berörda testerna.
 - **Inte gjort:** inget kördes. Verifieringsstegen markerade "Ej utfört" återstår, och ingen hypotes är därför bekräftad, bara stödd av observerad kod. Inga kodändringar har gjorts.
 - **Begränsning:** "förväntat resultat" är vår förutsägelse utifrån läsning, inte mätning.
+
+## Steg 2
+
+### Uppgiften
+
+> Utifrån hypotes 1: vilka filer och funktioner ska jag undersöka? Vad ska jag leta efter?
+
+**Hypotes 1 i en mening:** "ej konfigurerat" är inget tillstånd som koden känner till, och det inbyggda IBAN:et är en demobekvämlighet som ligger på användningsstället. Undersökningen ska därför svara på tre frågor: *var uppstår värdet, vem använder det, och finns det något som skulle ha stoppat det?*
+
+### Undersökningsordning
+
+Gå igenom filerna i den här ordningen. Den följer värdets väg från konfiguration till kund. Radnumren gäller commit `2c7a06d` och söks enklast fram med namnet på funktionen.
+
+| # | Fil och funktion | Vad du ska leta efter | Redan observerat (bekräfta själv) |
+|---|---|---|---|
+| 1 | `BlazorShop.Application/DTOs/Payment/BankTransferSettings.cs` | Typerna på `Iban`, `Beneficiary` och `BankName`. Är de nullbara eller `required`, eller har de standardvärdet `string.Empty`? | Alla tre är `string = string.Empty`. Typen säger alltså "alltid ett värde", och ett saknat värde ser därmed ut som ett giltigt tomt värde |
+| 2 | `BlazorShop.Infrastructure/DependencyInjection.cs:191` | Hur sektionen `BankTransfer` binds till klassen. Finns `ValidateOnStart`, `Validate` eller någon annan kontroll direkt vid bindningen? | Bara `Configure<BankTransferSettings>(...)`, ingen kontroll. Vår validering läggs på från ett annat håll (`NutsnBerriesHardeningExtensions.cs:36`) |
+| 3 | `BlazorShop.Application/Services/Payment/BankTransferNotifier.cs`, `BuildInfo` (rad 31–42) | Raderna som tar ett värde ur inställningarna. Vilka fält har en reserv och vilka inte? Förklaras reserven med en kommentar? | Bara `Iban` (rad 33–35) har en reserv, ingen kommentar. `Beneficiary` (36), `BankName` (37) och `AdditionalInfo` (41) kopieras rakt av |
+| 4 | Samma fil, `TrySendEmailAsync` (rad 44–70) | Vilken information mejlet bygger på, och om något kontrollerar den innan den skickas | Mejlet använder det som `BuildInfo` gav, inklusive reservvärdet. Det enda som kontrolleras är kundens e-postadress (rad 48). `catch`-blocket (rad 66) loggar och sväljer fel |
+| 5 | `BlazorShop.Application/Services/Payment/CheckoutOrchestrator.cs`, `ExecuteOwnedCheckoutAsync` (rad 131–241) | Anropet till `BuildInfo` (rad 201), ordningen mellan det, `SetPendingOutcomeAsync` (rad 206) och `CreateOrderWithInventoryAsync` (rad 218), och om något mellan start och `BuildInfo` tittar på inställningarna | Ingen kontroll av inställningarna. Informationen byggs och sparas som kvittens *före* lagerreservationen |
+| 6 | Samma fil, `ResumeCommittedOrderAsync` (rad 244–275) och `CompleteLocalPaymentAsync` (rad 277–300) | Den andra vägen till samma värde (`BuildInfo` på rad 268, mejlet på rad 295–298) | Samma anrop utan kontroll, så att reservvärdet nås från två håll |
+| 7 | `BlazorShop.Web/Pages/Payments/Cart.razor` (rad 176–200) och `Cart.razor.cs` (rad 291–295) | Vad kunden ser, och om något döljer fält som är tomma | Banknamn, mottagare och IBAN visas utan villkor. Bara `AdditionalInfo` är skyddad med `IsNullOrWhiteSpace`. Enda villkoret i `.razor.cs` är `result.BankTransfer is not null` |
+| 8 | Historiken: `git show 91818da`, sök efter `BG00UNCR`; `git show 6d1896e`; `git log upstream/master -S"BG00UNCR70001512345678"` | Commit-meddelandet och diffen där värdet infördes: står det varför, och infördes det tillsammans med exempelkonfigurationen? Vad hände med det när koden skrevs om? | Infördes i `91818da` (2025-08-20) i mejlkoden, tillsammans med samma värde i `appsettings.json`. Flyttades och ändrades i `6d1896e` (#101) |
+| 9 | Testerna: `CheckoutOrchestratorTests.cs`, `CheckoutOrchestratorCharacterizationTests.cs`, `InventoryReservationPostgreSqlTests.cs` och `StartupValidationTests.cs` | Finns ett test som *kräver* reservvärdet, och finns ett test som kräver att tom konfiguration avvisas? Sök på `new BankTransferSettings()` och på `BG00` | Inget test verkar kräva reservvärdet (det tomma bygget på rad 238 ligger i ett Stripe-test). Inget test kräver heller att tom konfiguration avvisas. Två tester kräver tvärtom att den *godkänns* |
+
+### Vad du ska leta efter
+
+**Tecken som stöder hypotes 1:**
+
+1. Reserven finns på *ett* ställe, vid användningen, och ingenstans i validering, betalsättslista eller kassaflödets början (steg 2, 3, 5).
+2. Reserven är inkonsekvent: bara IBAN har en, vilket ger ett IBAN utan mottagare (steg 3).
+3. Värdet är kopierat från exempelkonfigurationen och infördes i samma commit som funktionen (steg 8).
+4. Ingen kommentar, dokumentation eller test förklarar reserven som ett avsiktligt beteende (steg 3, 8, 9).
+5. Både skärmen och mejlet återger värdet utan kontroll, så felet sprids i stället för att stoppas (steg 4, 6, 7).
+
+**Tecken som talar emot hypotes 1:**
+
+1. En kontroll *före* `BuildInfo` som gör att tom `Iban` aldrig kan nå koden (steg 2, 5).
+2. Ett commit-meddelande, en README-rad eller en runbook som uttryckligen säger att reserven är en avsedd demofunktion eller ett skydd mot något annat (steg 8).
+3. Ett test eller ett dokument som kräver reserven (steg 9). Då är den ett avsiktligt beteende och inte en miss.
+4. Gränssnittet döljer instruktionerna när fälten är tomma (steg 7). Då når reservvärdet inte kunden på skärmen, bara i mejlet.
+
+### Beslutsregel
+
+- **Hypotes 1 stämmer** om punkt 1–3 bland stödtecknen håller och ingen av de motsägande punkterna hittas.
+- **Hypotes 1 försvagas** om du hittar en kontroll före `BuildInfo` eller ett avsiktligt beteende. Då flyttas tyngdpunkten till hypotes 2 (exempelkonfigurationen), som inte beror på reservvärdet.
+- **Skriv ner varje fynd med fil och rad**, och skilj på *läst i koden* och *bekräftat genom körning*. Läsning ger stöd, bara en körning ger bevis.
+
+### Frivillig bekräftelse genom körning
+
+Om du vill gå från läsning till bevis efter genomgången, i ordning efter minst ansträngning:
+
+1. **Mutationstest:** ta bort raderna 33–35 i `BankTransferNotifier.cs` tillfälligt (låt `Iban` kopieras rakt av), kör `dotnet test BlazorShop.Tests/BlazorShop.Tests.csproj -c Release` och se vilka tester som går sönder. Förväntat vid läsning: inga, vilket skulle bekräfta att inget test beror på reservvärdet. Återställ sedan filen.
+2. **Nytt test:** `BankTransferSettings` helt tom, en bankbetalning genomförs. Förväntat: `Iban` är `BG00UNCR70001512345678`, `Beneficiary` och `BankName` är tomma, och mejltexten innehåller samma värden.
+3. **Git:** `git show 91818da --stat` och sök i diffen efter `BG00UNCR` för att läsa den ursprungliga koden i sitt sammanhang.
+
+*Ingenting av detta är utfört i Steg 2. Kolumnen "Redan observerat" kommer från vår läsning av koden, inte från körning.*
